@@ -1,0 +1,405 @@
+/* =========================================================
+   BuildStock - Login page (CCS110 Finals Project)
+   Same industrial dark theme as the dashboard.
+   No :root / custom properties: all values written directly.
+   ========================================================= */
+
+/* ---------- 1. Reset & base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #121212;
+  color: #e0e0e0;
+  font-family: "Barlow", "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1,
+h2 {
+  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* ---------- 2. Split layout ---------- */
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Left: brand panel with a hazard-stripe edge */
+.brand-panel {
+  position: relative;
+  background: #1e1e1e;
+  border-right: 1px solid #2d2d2d;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.brand-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(-45deg, #f97316 0, #f97316 14px, #121212 14px, #121212 28px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
+  background: #f97316;
+  color: #121212;
+  display: grid;
+  place-items: center;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.brand-name {
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.brand-sub {
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+.brand-copy .tagline {
+  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+  font-size: 54px;
+  line-height: 1.02;
+  max-width: 440px;
+  margin-bottom: 14px;
+}
+
+.brand-copy p {
+  color: #a8a8a8;
+  max-width: 400px;
+  font-size: 16px;
+}
+
+.brand-foot {
+  color: #7a7a7a;
+  font-size: 13px;
+}
+
+/* Right: form area */
+.form-panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-card h1 {
+  font-size: 36px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.login-card .lead {
+  color: #9a9a9a;
+  margin-bottom: 24px;
+}
+
+/* ---------- 3. Role switch (CSS-only radios) ---------- */
+.role-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  background: #1e1e1e;
+  border: 1px solid #2d2d2d;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
+.role-switch label {
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: 4px;
+  color: #b5b5b5;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.role-switch label:hover {
+  background: #2d2d2d;
+  color: #ffffff;
+}
+
+#r-admin:checked~.role-switch label[for="r-admin"] {
+  background: #f97316;
+  color: #121212;
+}
+
+#r-staff:checked~.role-switch label[for="r-staff"] {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+#r-admin:focus-visible~.role-switch label[for="r-admin"],
+#r-staff:focus-visible~.role-switch label[for="r-staff"] {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Role description: only the matching one shows */
+.role-hint {
+  display: none;
+  margin-bottom: 22px;
+  padding: 12px 14px;
+  background: #1e1e1e;
+  border-left: 3px solid #2d2d2d;
+  border-radius: 0 4px 4px 0;
+  color: #a8a8a8;
+  font-size: 14px;
+}
+
+#r-admin:checked~.hint-admin {
+  display: block;
+  border-left-color: #f97316;
+}
+
+#r-staff:checked~.hint-staff {
+  display: block;
+  border-left-color: #3b82f6;
+}
+
+/* Label text and button text that change with the role */
+.when-admin,
+.when-staff {
+  display: none;
+}
+
+#r-admin:checked~.field .when-admin,
+#r-admin:checked~.form-actions .when-admin {
+  display: inline;
+}
+
+#r-staff:checked~.field .when-staff,
+#r-staff:checked~.form-actions .when-staff {
+  display: inline;
+}
+
+/* ---------- 4. Fields ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field input[type="text"],
+.field input[type="password"] {
+  width: 100%;
+  padding: 12px 14px;
+  background: #121212;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+}
+
+.field input::placeholder {
+  color: #6f6f6f;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+#r-staff:checked~.field input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 22px;
+  font-size: 14px;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 16px;
+  height: 16px;
+  accent-color: #f97316;
+}
+
+/* ---------- 5. Submit button ---------- */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 13px 18px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.btn-orange {
+  background: #f97316;
+  color: #121212;
+}
+
+.btn-orange:hover {
+  background: #fb8a3c;
+}
+
+/* Button turns steel blue when the staff role is selected */
+#r-staff:checked~.form-actions .btn {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+#r-staff:checked~.form-actions .btn:hover {
+  background: #5b97f7;
+}
+
+.help {
+  margin-top: 22px;
+  text-align: center;
+  color: #8a8a8a;
+  font-size: 13px;
+}
+
+/* ---------- 5b. Error message (filled in by the login script) ---------- */
+.form-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border-left: 3px solid #ef4444;
+  border-radius: 0 4px 4px 0;
+  color: #f87171;
+  font-size: 14px;
+}
+
+.form-error:empty {
+  display: none;
+}
+
+/* ---------- 6. Responsive ---------- */
+@media (max-width: 880px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    padding: 40px 24px 28px;
+    gap: 22px;
+    border-right: none;
+    border-bottom: 1px solid #2d2d2d;
+  }
+
+  .brand-copy .tagline {
+    font-size: 38px;
+  }
+
+  .brand-foot {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* ---------- Accessibility helpers & semantic element resets ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+fieldset {
+  border: 0;
+  min-width: 0;
+}
