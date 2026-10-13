@@ -448,6 +448,6 @@
     </main>
   </div>
 </div>
-<script src="scripts/dashboard.js"></script>
+<script src="dashboard.js"></script>
 </body>
 </html>

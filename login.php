@@ -82,6 +82,6 @@
   </main>
 
 </div>
-<script src="scripts/login.js"></script>
+<script src="login.js"></script>
 </body>
 </html>

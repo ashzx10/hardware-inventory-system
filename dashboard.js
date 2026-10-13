@@ -351,7 +351,13 @@
     if (isAdmin && confirm('Reset all products, orders and sales to the sample data?')) { db = seed(); cart = []; commit('Demo data restored.'); }
     else if (!isAdmin) toast('Only admins can reset data.');
   });
-  menu[2].addEventListener('click', function () { apiSync('logout'); localStorage.removeItem('bs_user'); sessionStorage.removeItem('bs_user'); });
+  menu[2].addEventListener('click', function (e) {
+    e.preventDefault();
+    apiSync('logout');
+    localStorage.removeItem('bs_user');
+    sessionStorage.removeItem('bs_user');
+    location.replace('login.php');
+  });
 
   $('#dash .view-head a').addEventListener('click', function (e) { e.preventDefault(); $('#v-sales').checked = true; });
 
