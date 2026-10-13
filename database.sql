@@ -134,3 +134,61 @@ VALUES
 ('2026-10-09 16:02:00', 'FST-N03', 'Common Wire Nails 3 inch', 'adj', -2, 'Count correction', 'Staff Member'),
 ('2026-10-09 13:25:00', 'PLB-P20', 'PVC Pipe 2 inch x 3m', 'out', -15, '#S-10480', 'Staff Member'),
 ('2026-10-08 10:05:00', 'PNT-E04', 'Latex Paint Flat White 4L', 'in', 48, 'PO-2038', 'System Administrator');
+
+-- Additional sample data: five new records for every table.
+-- These rows are appended and do not replace the sample data above.
+INSERT INTO users (username, email, password_hash, full_name, role)
+VALUES
+('maria.santos', 'maria.santos@buildstock.local', SHA2('staff123', 256), 'Maria Santos', 'staff'),
+('juan.reyes', 'juan.reyes@buildstock.local', SHA2('staff123', 256), 'Juan Reyes', 'staff'),
+('liza.cruz', 'liza.cruz@buildstock.local', SHA2('staff123', 256), 'Liza Cruz', 'staff'),
+('carlos.garcia', 'carlos.garcia@buildstock.local', SHA2('staff123', 256), 'Carlos Garcia', 'staff'),
+('anna.mendoza', 'anna.mendoza@buildstock.local', SHA2('admin123', 256), 'Anna Mendoza', 'admin');
+
+INSERT INTO suppliers (name, contact, phone, status)
+VALUES
+('Metro Plumbing Supply', 'Roberto Flores', '0917 555 0201', 'Active'),
+('Prime Electrical Depot', 'Grace Lim', '0917 555 0202', 'Active'),
+('Solid Tools Trading', 'Noel Ramos', '0917 555 0203', 'Active'),
+('Southline Paint Center', 'Karen Diaz', '0917 555 0204', 'Active'),
+('Reliable Fasteners Inc.', 'Victor Tan', '0917 555 0205', 'Active');
+
+INSERT INTO products (sku, name, category, supplier_name, price, stock, reorder_level)
+VALUES
+('PLB-ELB', 'PVC Elbow 2 inch', 'Plumbing', 'Metro Plumbing Supply', 35.00, 75, 20),
+('ELC-W12', 'Electrical Wire 12 AWG 100m', 'Electrical', 'Prime Electrical Depot', 2850.00, 18, 10),
+('TLS-HMR', 'Claw Hammer 16oz', 'Tools', 'Solid Tools Trading', 320.00, 42, 10),
+('PNT-PRM', 'Concrete Primer 4L', 'Paint and Finishes', 'Southline Paint Center', 780.00, 14, 10),
+('FST-BLT', 'Hex Bolt 3/8 inch', 'Fasteners and Hardware', 'Reliable Fasteners Inc.', 12.00, 500, 100);
+
+INSERT INTO purchase_orders (po_number, supplier_name, product_sku, quantity, ordered_at, expected_at, amount, status)
+VALUES
+('PO-2042', 'Metro Plumbing Supply', 'PLB-ELB', 100, '2026-10-11', '2026-10-16', 3500.00, 'Pending'),
+('PO-2043', 'Prime Electrical Depot', 'ELC-W12', 20, '2026-10-11', '2026-10-18', 57000.00, 'In transit'),
+('PO-2044', 'Solid Tools Trading', 'TLS-HMR', 50, '2026-10-09', '2026-10-13', 16000.00, 'Received'),
+('PO-2045', 'Southline Paint Center', 'PNT-PRM', 30, '2026-10-12', '2026-10-19', 23400.00, 'Pending'),
+('PO-2046', 'Reliable Fasteners Inc.', 'FST-BLT', 300, '2026-10-10', '2026-10-15', 3600.00, 'In transit');
+
+INSERT INTO sales (receipt_no, sold_at, customer, payment_method, status, total)
+VALUES
+('#S-10483', '2026-10-11 09:15:00', 'Ramos Construction', 'Cash', 'Paid', 960.00),
+('#S-10484', '2026-10-11 10:20:00', 'Walk-in customer', 'GCash', 'Paid', 284.00),
+('#S-10485', '2026-10-11 13:05:00', 'Lopez Builders', 'Bank transfer', 'Paid', 5700.00),
+('#S-10486', '2026-10-12 08:45:00', 'Santiago Home Repair', 'Cash', 'Paid', 1560.00),
+('#S-10487', '2026-10-12 14:30:00', 'Walk-in customer', 'Credit', 'Credit', 1360.00);
+
+INSERT INTO sale_items (sale_receipt, product_sku, product_name, quantity, unit_price)
+VALUES
+('#S-10483', 'TLS-HMR', 'Claw Hammer 16oz', 3, 320.00),
+('#S-10484', 'PLB-ELB', 'PVC Elbow 2 inch', 8, 35.00),
+('#S-10485', 'ELC-W12', 'Electrical Wire 12 AWG 100m', 2, 2850.00),
+('#S-10486', 'PNT-PRM', 'Concrete Primer 4L', 2, 780.00),
+('#S-10487', 'FST-BLT', 'Hex Bolt 3/8 inch', 100, 12.00);
+
+INSERT INTO stock_movements (moved_at, product_sku, product_name, type, quantity, reference, recorded_by)
+VALUES
+('2026-10-11 09:15:00', 'TLS-HMR', 'Claw Hammer 16oz', 'out', -3, '#S-10483', 'Maria Santos'),
+('2026-10-11 10:20:00', 'PLB-ELB', 'PVC Elbow 2 inch', 'out', -8, '#S-10484', 'Juan Reyes'),
+('2026-10-11 13:05:00', 'ELC-W12', 'Electrical Wire 12 AWG 100m', 'out', -2, '#S-10485', 'Liza Cruz'),
+('2026-10-12 08:45:00', 'PNT-PRM', 'Concrete Primer 4L', 'out', -2, '#S-10486', 'Carlos Garcia'),
+('2026-10-12 14:30:00', 'FST-BLT', 'Hex Bolt 3/8 inch', 'out', -100, '#S-10487', 'Anna Mendoza');
