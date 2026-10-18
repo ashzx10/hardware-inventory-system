@@ -1,8 +1,7 @@
 -- PrimeBuild Hardware & Construction Supply: database (Step 2)
--- Run this on an empty server: it drops and recreates the "buildstock" database (name kept so config.php needs no change).
-DROP DATABASE IF EXISTS buildstock;
-CREATE DATABASE buildstock CHARACTER SET utf8mb4;
-USE buildstock;
+-- Run this on an empty server: it drops and recreates the "primebuild" database (name kept so config.php needs no change).
+CREATE DATABASE primebuild CHARACTER SET utf8mb4;
+USE primebuild;
 
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
