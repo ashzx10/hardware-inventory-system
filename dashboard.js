@@ -1,4 +1,4 @@
-/* BuildStock dashboard logic (CCS110 Finals Project)
+/* PrimeBuild dashboard logic
    Front-end demo: data lives in the browser's localStorage under "bs_data".
    Swap load()/save() for fetch() calls to your PHP/Node API when the database is ready. */
 (function () {
@@ -20,12 +20,49 @@
   var btn = function (s, a, id, cls, label) { return '<button class="btn btn-sm btn-' + cls + '" type="button" data-s="' + s + '" data-a="' + a + '" data-id="' + esc(id) + '">' + label + '</button>'; };
   var actionCell = function (html) { return td('<div class="row-actions">' + html + '</div>', 'num'); };
 
-  var toastEl, toastTimer;
-  function toast(msg) {
-    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
-    toastEl.textContent = msg; toastEl.style.display = 'block';
-    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.style.display = 'none'; }, 3000);
+  /* Toasts appear at the top center. type: success | warning | error | info */
+  var toastIcons = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-x-octagon-fill', info: 'bi-info-circle-fill' };
+  function showToast(type, message) {
+    var stack = document.getElementById('toastStack');
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type + ' show'; el.setAttribute('role', 'alert');
+    el.innerHTML = '<i class="bi ' + (toastIcons[type] || toastIcons.info) + '"></i><div class="toast-text"></div><button type="button" class="btn-close" aria-label="Close"></button>';
+    el.querySelector('.toast-text').textContent = message;
+    var close = function () { el.remove(); };
+    el.querySelector('.btn-close').addEventListener('click', close);
+    stack.appendChild(el); setTimeout(close, 5000);
   }
+  /* Older code calls toast(message); pick a type from the wording */
+  function toast(msg) { showToast(/only|enter|already|add at least|valid|add a note/i.test(msg) ? 'warning' : 'success', msg); }
+
+  /* Centered confirmation modal: showConfirm({ title, message, confirmText, onConfirm }) */
+  function showConfirm(o) {
+    var wrap = document.createElement('div');
+    wrap.className = 'modal fade'; wrap.tabIndex = -1;
+    wrap.innerHTML = '<div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title"></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"></div><div class="modal-footer"><button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" data-ok></button></div></div></div>';
+    wrap.querySelector('.modal-title').textContent = o.title || 'Please confirm';
+    wrap.querySelector('.modal-body').textContent = o.message || '';
+    wrap.querySelector('[data-ok]').textContent = o.confirmText || 'Confirm';
+    document.body.appendChild(wrap);
+    var modal = new bootstrap.Modal(wrap);
+    wrap.querySelector('[data-ok]').addEventListener('click', function () { modal.hide(); if (o.onConfirm) o.onConfirm(); });
+    wrap.addEventListener('hidden.bs.modal', function () { modal.dispose(); wrap.remove(); });
+    modal.show();
+  }
+  /* Archive modal: asks for an optional reason, then calls onConfirm(reason) */
+  function showArchive(o) {
+    var wrap = document.createElement('div');
+    wrap.className = 'modal fade'; wrap.tabIndex = -1;
+    wrap.innerHTML = '<div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title"></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p class="msg"></p><div class="field"><label>Reason (optional)</label><textarea rows="2" class="reason" placeholder="Why is this being archived?"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-delete" data-ok></button></div></div></div>';
+    wrap.querySelector('.modal-title').textContent = o.title; wrap.querySelector('.msg').textContent = o.message;
+    wrap.querySelector('[data-ok]').textContent = o.confirmText || 'Archive';
+    document.body.appendChild(wrap);
+    var modal = new bootstrap.Modal(wrap);
+    wrap.querySelector('[data-ok]').addEventListener('click', function () { var r = wrap.querySelector('.reason').value.trim(); modal.hide(); o.onConfirm(r); });
+    wrap.addEventListener('hidden.bs.modal', function () { modal.dispose(); wrap.remove(); });
+    modal.show();
+  }
+  window.showToast = showToast; window.showConfirm = showConfirm; window.showArchive = showArchive;
 
   function fill(sel, items) {   // items: 'text' or [value, text]
     var v = sel.value;
@@ -99,7 +136,8 @@
   if (!loaded) return;
   var db = loaded.data;
   var cart = [];
-  function save() { return apiSync('save', db); }
+  /* The old save-everything action was removed in Step 2. Each page is rewired to its own api.php action in Steps 3 to 8. */
+  function save() { showToast('warning', 'Saving for this page is being rebuilt and will work again in the next steps.'); return false; }
   function find(sku) { return db.products.filter(function (p) { return p.sku === sku; })[0]; }
   function status(p) { return p.stock <= 0 ? ['out', 'Out of Stock'] : p.stock <= p.reorder ? ['low', 'Low Stock'] : ['in', 'In Stock']; }
   function nextNo(list, prefixLen) { return Math.max.apply(null, list.map(function (o) { return +o.no.slice(prefixLen); }).concat(0)) + 1; }
@@ -123,19 +161,43 @@
     return false;
   }
 
+  /* Talk to api.php. Errors become toasts; the promise gives null on failure. */
+  function api(action, data) {
+    return fetch('api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ action: action }, data || {})) })
+      .then(function (r) {
+        return r.json().then(function (res) {
+          if (r.status === 401) { location.href = 'login.php'; }
+          if (!r.ok || res.error) throw new Error(res.error || 'The request failed.');
+          return res;
+        });
+      })
+      .catch(function (e) { showToast('error', e.message || 'Cannot reach the server.'); return null; });
+  }
+  function refresh() { return api('load').then(function (res) { if (res) { db = res.data; renderAll(); } return res; }); }
+  function fieldError(input, msg) {   // inline validation under the field
+    var box = input.closest('.field').querySelector('.field-error');
+    if (box) { box.textContent = msg || ''; input.classList.toggle('is-bad', !!msg); }
+    return !msg;
+  }
+
   /* ---------- Rendering ---------- */
   function renderProducts() {
-    var sel = $$('#products .toolbar select');
-    var cats = []; db.products.forEach(function (p) { if (cats.indexOf(p.cat) < 0) cats.push(p.cat); });
-    fill(sel[0], ['All categories'].concat(cats));
+    fill($('#fCat'), ['All categories'].concat(db.categories.map(function (c) { return c.name; })));
+    var q = $('#prodSearch').value.trim().toLowerCase(), fc = $('#fCat'), fs = $('#fStatus');
     var list = db.products.filter(function (p) {
-      return (sel[0].selectedIndex < 1 || p.cat === sel[0].value) && (sel[1].selectedIndex < 1 || status(p)[1] === sel[1].value);
+      var hay = (p.sku + ' ' + p.name + ' ' + p.cat + ' ' + p.supplier).toLowerCase();
+      return (!q || hay.indexOf(q) > -1) && (fc.selectedIndex < 1 || p.cat === fc.value) && (fs.selectedIndex < 1 || status(p)[1] === fs.value);
     });
-    fillRows($('#products tbody'), list, 7, function (p) {
+    fillRows($('#products tbody'), list, isAdmin ? 8 : 7, function (p) {
       var s = status(p);
-      return '<tr>' + td(esc(p.sku), 'sku') + td(esc(p.name)) + td(esc(p.cat)) + td(money(p.price), 'num') + td(p.stock, 'num') + td(badge(s[0], s[1])) +
-        (isAdmin ? actionCell(btn('prod', 'edit', p.sku, 'edit', 'Edit') + btn('prod', 'del', p.sku, 'delete', 'Delete')) : td('-', 'num')) + '</tr>';
+      return '<tr>' + td(esc(p.sku), 'sku') + td(esc(p.name)) + td(esc(p.cat)) + td(esc(p.supplier)) + td(money(p.price), 'num') + td(p.stock, 'num') + td(badge(s[0], s[1])) +
+        (isAdmin ? actionCell(btn('prod', 'edit', p.sku, 'edit', '<i class="bi bi-pencil"></i> Edit') + btn('prod', 'del', p.sku, 'delete', '<i class="bi bi-archive"></i> Archive')) : '') + '</tr>';
     }, 'No products match these filters.');
+  }
+  function renderCategoryList() {
+    $('#catList').innerHTML = db.categories.map(function (c) {
+      return '<div class="cat-row" data-name="' + esc(c.name) + '"><span class="cat-prefix">' + esc(c.prefix) + '</span><input class="cat-input" value="' + esc(c.name) + '" aria-label="Category name"><button class="btn btn-sm btn-edit" data-cat="rename" type="button">Save name</button><button class="btn btn-sm btn-delete" data-cat="archive" type="button">Archive</button></div>';
+    }).join('') || '<p class="muted">No categories yet.</p>';
   }
 
   function renderSuppliers() {
@@ -152,16 +214,44 @@
     }, 'No purchase orders yet.');
   }
 
+  var moveLabel = { in: ['in', 'Stock in'], out: ['move-out', 'Stock out'], adj: ['info', 'Adjustment'] };
+  var moveQtyClass = function (m) { return m.type === 'out' ? 'qty-moveout' : m.qty > 0 ? 'qty-in' : 'qty-out'; };
+  var moveQty = function (m) { return td((m.qty > 0 ? '+' : '\u2212') + Math.abs(m.qty), 'num ' + moveQtyClass(m)); };
+  var hPage = 1, HSIZE = 10;
+
+  function histList() {
+    var q = $('#hSearch').value.trim().toLowerCase(), t = $('#hType').value, p = $('#hProduct').value, y = $('#hYear').value, f = $('#hFrom').value, to = $('#hTo').value;
+    return db.moves.filter(function (m) {
+      var day = m.date.slice(0, 10);
+      return (!q || (m.no + ' ' + m.product + ' ' + m.ref + ' ' + (m.note || '') + ' ' + m.by).toLowerCase().indexOf(q) > -1) &&
+        (!t || m.type === t) && (!p || m.sku === p) && (!y || day.slice(0, 4) === y) && (!f || day >= f) && (!to || day <= to);
+    });
+  }
+  function renderHistory() {
+    var list = histList(), pages = Math.max(1, Math.ceil(list.length / HSIZE));
+    if (hPage > pages) hPage = pages;
+    var from = (hPage - 1) * HSIZE;
+    fillRows($('#historyRows'), list.slice(from, from + HSIZE), 8, function (m) {
+      var l = moveLabel[m.type];
+      return '<tr>' + td(fmt(m.date, true)) + td(esc(m.no)) + td(esc(m.product)) + td(badge(l[0], l[1])) + moveQty(m) + td(esc(m.ref)) + td(esc(m.note || '-')) + td(esc(m.by)) + '</tr>';
+    }, 'No movements match these filters.');
+    $('#hInfo').textContent = list.length ? 'Showing ' + (from + 1) + ' to ' + Math.min(from + HSIZE, list.length) + ' of ' + list.length + ' movements' : '0 movements';
+    $('#hPrev').disabled = hPage <= 1; $('#hNext').disabled = hPage >= pages;
+  }
+  function showPicked() {   // shows the Stock Keeping Unit and stock of the chosen product
+    var p = find($('#m-product').value), adj = $('#m-type').value === 'adj';
+    $('#m-sku').value = p ? p.sku : ''; $('#m-stock').value = p ? p.stock + ' in stock' : '';
+    $('#m-qtyHelp').textContent = adj ? 'Use a minus sign to remove stock, for example -2.' : 'How many units moved.';
+  }
   function renderMoves() {
-    var f = $('#movements .toolbar select').value;
-    var map = { 'Stock in': 'in', 'Stock out': 'out', 'Adjustment': 'adj' };
-    var label = { in: ['in', 'Stock in'], out: ['out', 'Stock out'], adj: ['info', 'Adjustment'] };
-    var list = db.moves.filter(function (m) { return f === 'All types' || map[f] === m.type; });
-    fillRows($('#movements tbody'), list, 6, function (m) {
-      var l = label[m.type];
-      return '<tr>' + td(fmt(m.date, true)) + td(esc(m.product)) + td(badge(l[0], l[1])) +
-        td((m.qty > 0 ? '+' : '−') + Math.abs(m.qty), 'num ' + (m.qty > 0 ? 'qty-in' : 'qty-out')) + td(esc(m.ref)) + td(esc(m.by)) + '</tr>';
-    }, 'No movements of this type.');
+    fillRows($('#recentMovesFull'), db.moves.slice(0, 5), 6, function (m) {
+      var l = moveLabel[m.type];
+      return '<tr>' + td(fmt(m.date, true)) + td(esc(m.product)) + td(badge(l[0], l[1])) + moveQty(m) + td(esc(m.ref)) + td(esc(m.by)) + '</tr>';
+    }, 'No movements yet.');
+    fill($('#hProduct'), [['', 'All products']].concat(db.products.map(function (p) { return [p.sku, p.name]; })));
+    var years = []; db.moves.forEach(function (m) { var y = m.date.slice(0, 4); if (years.indexOf(y) < 0) years.push(y); });
+    fill($('#hYear'), [['', 'All years']].concat(years.sort().reverse().map(function (y) { return [y, y]; })));
+    renderHistory(); showPicked();
   }
 
   function cartTotal() { return cart.reduce(function (t, c) { return t + c.qty * c.price; }, 0); }
@@ -183,55 +273,91 @@
     renderCart();
   }
 
+  var charts = {};
+  function drawChart(id, cfg) {
+    if (!window.Chart) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), cfg);
+  }
+  function dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
   function renderDash() {
-    var cats = {}; db.products.forEach(function (p) { cats[p.cat] = 1; });
+    var now = new Date(), today = dayKey(now), month = today.slice(0, 7);
+    var cats = {}, units = {}, value = 0;
+    db.products.forEach(function (p) { cats[p.cat] = 1; units[p.cat] = (units[p.cat] || 0) + p.stock; value += p.stock * p.price; });
     var low = db.products.filter(function (p) { return p.stock <= p.reorder; }).sort(function (a, b) { return a.stock - b.stock; });
-    var sum = db.sales.reduce(function (t, s) { return t + s.total; }, 0);
-    var transit = db.pos.filter(function (o) { return o.status === 'In transit'; }).length;
-    var vals = [
-      [db.products.length, Object.keys(cats).length + ' categories'],
-      [low.length, 'At or below reorder level'],
-      [db.suppliers.filter(function (s) { return s.status === 'Active'; }).length, transit + ' orders in transit'],
-      [money(sum), db.sales.length + ' transactions']
-    ];
-    $$('#dash .stat').forEach(function (el, i) {
-      el.querySelector('.stat-value').textContent = vals[i][0];
-      el.querySelector('.stat-note').textContent = vals[i][1];
-    });
-    $$('#dash .stat-label')[3].textContent = 'Total sales';
-    $('#dash .alert-list').innerHTML = low.slice(0, 5).map(function (p) {
+    var out = db.products.filter(function (p) { return p.stock <= 0; });
+    var salesToday = db.sales.filter(function (s) { return s.date.slice(0, 10) === today; });
+    var salesMonth = db.sales.filter(function (s) { return s.date.slice(0, 7) === month; });
+    var sum = function (l) { return l.reduce(function (t, s) { return t + s.total; }, 0); };
+    var openPos = db.pos.filter(function (o) { return o.status === 'Pending' || o.status === 'In transit'; }).length;
+    var set = function (k, v, n) { $('#s-' + k).textContent = v; $('#n-' + k).textContent = n; };
+    set('products', db.products.length, 'across ' + Object.keys(cats).length + ' categories');
+    set('low', low.length, 'At or below reorder level');
+    set('out', out.length, out.length ? 'Need an urgent order' : 'Everything is available');
+    set('today', money(sum(salesToday)), salesToday.length + ' transactions today');
+    set('month', money(sum(salesMonth)), salesMonth.length + ' transactions this month');
+    set('value', money(value), 'Stock on hand at selling price');
+    set('suppliers', db.suppliers.filter(function (s) { return s.status === 'Active'; }).length, db.pos.filter(function (o) { return o.status === 'In transit'; }).length + ' orders in transit');
+    set('pos', openPos, 'Pending or in transit');
+
+    /* Needs restocking */
+    $('#restockList').innerHTML = low.slice(0, 6).map(function (p) {
       return '<li><span>' + esc(p.name) + '</span><span>' + (p.stock ? p.stock + ' left' : 'Out of stock') + '</span></li>';
     }).join('') || '<li><span>All stock levels are healthy.</span><span></span></li>';
-    fillRows($('#dash tbody'), db.sales.slice(0, 4), 5, function (s) {
-      return '<tr>' + td(s.no) + td(esc(s.customer)) + td(fmt(s.date)) + td(money(s.total), 'num') + td(badge(s.status === 'Paid' ? 'done' : 'low', s.status)) + '</tr>';
+
+    /* Top selling products */
+    var tally = {};
+    db.sales.forEach(function (s) { s.items.forEach(function (i) { tally[i.name] = (tally[i.name] || 0) + i.qty; }); });
+    var top = Object.keys(tally).map(function (n) { return [n, tally[n]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
+    var max = top.length ? top[0][1] : 1;
+    $('#topList').innerHTML = top.map(function (t) {
+      return '<div class="top-row"><div class="top-label"><span>' + esc(t[0]) + '</span><strong>' + t[1] + ' sold</strong></div><div class="top-bar"><span style="width:' + Math.round(t[1] / max * 100) + '%"></span></div></div>';
+    }).join('') || '<p class="muted">No sales yet.</p>';
+
+    /* Recent sales and movements */
+    fillRows($('#dash .table-wrap tbody'), db.sales.slice(0, 5), 5, function (s) {
+      return '<tr>' + td(s.no) + td(fmt(s.date)) + td(esc(s.pay)) + td(money(s.total), 'num') + td(badge('done', 'Paid')) + '</tr>';
     }, 'No sales yet.');
+    var label = { in: ['in', 'Stock in'], out: ['move-out', 'Stock out'], adj: ['info', 'Adjustment'] };
+    fillRows($('#recentMoves'), db.moves.slice(0, 5), 3, function (m) {
+      var l = label[m.type];
+      return '<tr>' + td(esc(m.product)) + td(badge(l[0], l[1])) + td((m.qty > 0 ? '+' : '\u2212') + Math.abs(m.qty), 'num ' + (m.qty > 0 ? 'qty-in' : 'qty-out')) + '</tr>';
+    }, 'No movements yet.');
+
+    /* Charts */
+    if (window.Chart) { Chart.defaults.color = '#b5b5b5'; Chart.defaults.borderColor = '#2d2d2d'; Chart.defaults.font.family = 'Barlow, sans-serif'; }
+    var days = [], totals = [];
+    for (var d = 6; d >= 0; d--) {
+      var day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - d), k = dayKey(day);
+      days.push(day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      totals.push(sum(db.sales.filter(function (s) { return s.date.slice(0, 10) === k; })));
+    }
+    drawChart('chartSales', { type: 'bar', data: { labels: days, datasets: [{ label: 'Sales (\u20B1)', data: totals, backgroundColor: '#FFB51B', borderRadius: 4 }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+    var names = Object.keys(units);
+    drawChart('chartStock', { type: 'doughnut', data: { labels: names, datasets: [{ data: names.map(function (n) { return units[n]; }), borderColor: '#202020',
+      backgroundColor: ['#FFB51B', '#F2F2F0', '#a78bfa', '#4f9cf9', '#22c55e', '#fb923c', '#9a9a9a'] }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
   }
 
   function fillSelects() {
     var names = db.suppliers.map(function (s) { return s.name; });
     var prods = db.products.map(function (p) { return [p.sku, p.name]; });
-    fill($('#p-supplier'), names); fill($('#po-supplier'), names);
-    fill($('#po-product'), prods); fill($('#m-product'), prods); fill($('#s-product'), prods);
+    fill($('#p-supplier'), names); fill($('#po-supplier'), names); fill($('#p-cat'), db.categories.map(function (c) { return c.name; }));
+    fill($('#po-product'), prods); fill($('#m-product'), db.products.map(function (p) { return [p.sku, p.name + ' (' + p.stock + ' in stock)']; })); fill($('#s-product'), prods);
   }
 
-  var search = $('.search input');
-  function applySearch() {   // header search filters the table rows
-    var q = search.value.trim().toLowerCase();
-    $$('.view tbody tr').forEach(function (tr) { tr.style.display = !q || tr.textContent.toLowerCase().indexOf(q) > -1 ? '' : 'none'; });
-  }
-  function renderAll() { fillSelects(); renderProducts(); renderSuppliers(); renderMoves(); renderSales(); renderDash(); applySearch(); }
+  function applySearch() {}   // header search was removed; each page gets its own search in later steps
+  function renderAll() { fillSelects(); renderCategoryList(); renderProducts(); renderSuppliers(); renderMoves(); renderSales(); renderDash(); applySearch(); }
 
   /* ---------- Row actions (Edit / Delete / status changes) ---------- */
   var actions = {
-    'prod-edit': function (sku) {
-      var p = find(sku), price = ask('New unit price (₱) for ' + p.name, p.price); if (price === null) return;
-      var stock = ask('Stock on hand', p.stock); if (stock === null) return;
-      if (stock !== p.stock) log(p.name, 'adj', stock - p.stock, 'Manual edit');
-      p.price = price; p.stock = stock; commit('Product updated.');
-    },
+    'prod-edit': function (sku) { openProduct(find(sku)); },
     'prod-del': function (sku) {
-      if (!confirm('Delete ' + find(sku).name + '? This cannot be undone.')) return;
-      db.products = db.products.filter(function (p) { return p.sku !== sku; }); commit('Product deleted.');
+      var p = find(sku);
+      showArchive({ title: 'Archive product', message: 'Archive "' + p.name + '"? It moves to Archive and Deleted Items, where it can be restored later.',
+        onConfirm: function (reason) { api('product_archive', { id: sku, reason: reason }).then(function (r) { if (r) { refresh(); showToast('success', p.name + ' was archived.'); } }); } });
     },
     'sup-edit': function (name) {
       var s = db.suppliers.filter(function (x) { return x.name === name; })[0];
@@ -280,12 +406,51 @@
   });
 
   /* ---------- Forms ---------- */
-  $('#products form').addEventListener('submit', function (e) {   // Create product
-    e.preventDefault(); if (!isAdmin) return;
-    var sku = $('#p-sku').value.trim().toUpperCase();
-    if (find(sku)) return toast('SKU ' + sku + ' already exists.');
-    db.products.push({ sku: sku, name: $('#p-name').value.trim(), cat: $('#p-cat').value, supplier: $('#p-supplier').value, price: +$('#p-price').value, stock: +$('#p-stock').value, reorder: +$('#p-reorder').value || 0 });
-    if (commit('Product saved.')) e.target.reset();
+  /* ----- Products: add / edit modal ----- */
+  var productModal = bootstrap.Modal.getOrCreateInstance($('#productModal')), editingSku = '';
+  function previewSku() {
+    if (editingSku) return;
+    api('next_sku', { category: $('#p-cat').value }).then(function (r) { if (r) $('#p-sku').value = r.sku; });
+  }
+  function openProduct(p) {
+    editingSku = p ? p.sku : '';
+    $$('#productModal .field-error').forEach(function (b) { b.textContent = ''; });
+    $('#productModalTitle').textContent = p ? 'Edit product' : 'Add product';
+    $('#p-stockField').hidden = !!p; $('#p-editNote').hidden = !p;
+    $('#p-name').value = p ? p.name : ''; $('#p-price').value = p ? p.price : ''; $('#p-reorder').value = p ? p.reorder : 20; $('#p-stock').value = p ? '' : 0;
+    if (p) { $('#p-cat').value = p.cat; $('#p-supplier').value = p.supplier; $('#p-sku').value = p.sku; } else { $('#p-sku').value = ''; previewSku(); }
+    productModal.show();
+  }
+  $('#btnAddProduct').addEventListener('click', function () { openProduct(null); });
+  $('#p-cat').addEventListener('change', previewSku);
+  $('#p-save').addEventListener('click', function () {
+    var ok = true;
+    ok = fieldError($('#p-name'), $('#p-name').value.trim() ? '' : 'Enter the product name.') && ok;
+    ok = fieldError($('#p-cat'), $('#p-cat').value ? '' : 'Choose a category.') && ok;
+    ok = fieldError($('#p-supplier'), $('#p-supplier').value ? '' : 'Choose a supplier.') && ok;
+    ok = fieldError($('#p-price'), +$('#p-price').value > 0 ? '' : 'Enter a price above zero.') && ok;
+    if (!ok) return;
+    api('product_save', { sku: editingSku, name: $('#p-name').value.trim(), category: $('#p-cat').value, supplier: $('#p-supplier').value, price: +$('#p-price').value, stock: +$('#p-stock').value || 0, reorder: +$('#p-reorder').value || 0 })
+      .then(function (r) { if (r) { productModal.hide(); refresh(); showToast('success', editingSku ? 'Product updated.' : 'Product saved. Stock Keeping Unit: ' + r.sku); } });
+  });
+
+  /* ----- Categories modal ----- */
+  var categoryModal = bootstrap.Modal.getOrCreateInstance($('#categoryModal'));
+  $('#btnCategories').addEventListener('click', function () { categoryModal.show(); });
+  $('#catAdd').addEventListener('click', function () {
+    var name = $('#catNew').value.trim(); if (!name) return showToast('warning', 'Enter a category name.');
+    api('category_save', { name: name }).then(function (r) { if (r) { $('#catNew').value = ''; refresh(); showToast('success', 'Category added.'); } });
+  });
+  $('#catList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-cat]'); if (!b) return;
+    var row = b.closest('.cat-row'), old = row.dataset.name;
+    if (b.dataset.cat === 'rename') {
+      var name = row.querySelector('.cat-input').value.trim(); if (!name) return showToast('warning', 'Enter a category name.');
+      api('category_save', { name: name, old_name: old }).then(function (r) { if (r) { refresh(); showToast('success', 'Category renamed.'); } });
+    } else {
+      showConfirm({ title: 'Archive category', message: 'Archive "' + old + '"? You can only do this when it has no active products.', confirmText: 'Archive',
+        onConfirm: function () { api('category_archive', { name: old }).then(function (r) { if (r) { refresh(); showToast('success', 'Category archived.'); } }); } });
+    }
   });
 
   $('#suppliers .panel-head .btn-blue').addEventListener('click', function () {   // Create supplier
@@ -303,20 +468,39 @@
     commit('Purchase order placed.'); e.target.reset();
   });
 
-  $('#m-type').addEventListener('change', function () {   // adjustments may be negative
-    var adj = this.value === 'Adjustment';
-    $('#m-qty').min = adj ? '' : '1'; $('#m-qty').placeholder = adj ? '+ or - change' : '0';
+  /* ----- Stock movements form ----- */
+  fill($('#m-type'), isAdmin ? [['in', 'Stock in'], ['out', 'Stock out'], ['adj', 'Adjustment']] : [['in', 'Stock in'], ['out', 'Stock out']]);   // only the administrator sees Adjustment
+  $('#m-product').addEventListener('change', showPicked); $('#m-type').addEventListener('change', showPicked);
+  function clearMoveForm() { $('#m-qty').value = ''; $('#m-note').value = ''; showPicked(); }
+  $('#m-clear').addEventListener('click', clearMoveForm);
+  $('#m-save').addEventListener('click', function () {
+    var p = find($('#m-product').value), type = $('#m-type').value, q = +$('#m-qty').value;
+    if (!p) return showToast('warning', 'Choose a product.');
+    if (!q || (type !== 'adj' && q < 0)) return showToast('warning', 'Enter a valid quantity.');
+    if (type === 'out' && q > p.stock) return showToast('warning', 'Only ' + p.stock + ' of ' + p.name + ' on hand.');
+    api('movement_record', { sku: p.sku, type: type, qty: q, note: $('#m-note').value.trim() }).then(function (r) {
+      if (r) { clearMoveForm(); refresh(); showToast('success', 'Movement recorded: ' + r.no + '.'); }
+    });
   });
-  $('#movements form').addEventListener('submit', function (e) {   // Record stock movement
-    e.preventDefault();
-    var t = $('#m-type').value, q = +$('#m-qty').value, p = find($('#m-product').value), note = $('#m-note').value.trim();
-    if (!p || !q || (t !== 'Adjustment' && q < 0)) return toast('Enter a valid quantity.');
-    if (t === 'Adjustment' && !note) return toast('Add a note explaining the adjustment.');
-    var d = t === 'Stock out' ? -q : q;
-    if (p.stock + d < 0) return toast('Only ' + p.stock + ' of ' + p.name + ' on hand.');
-    p.stock += d;
-    log(p.name, t === 'Stock in' ? 'in' : t === 'Stock out' ? 'out' : 'adj', d, $('#m-ref').value.trim() || note || '-');
-    commit('Movement recorded.'); e.target.reset();
+
+  /* ----- Stock Movement History: filters, pagination, download ----- */
+  ['hSearch', 'hType', 'hProduct', 'hYear', 'hFrom', 'hTo'].forEach(function (id) {
+    $('#' + id).addEventListener(id === 'hSearch' ? 'input' : 'change', function () { hPage = 1; renderHistory(); });
+  });
+  $('#hClear').addEventListener('click', function () {
+    ['hSearch', 'hType', 'hProduct', 'hYear', 'hFrom', 'hTo'].forEach(function (id) { $('#' + id).value = ''; }); hPage = 1; renderHistory();
+  });
+  $('#hPrev').addEventListener('click', function () { hPage--; renderHistory(); });
+  $('#hNext').addEventListener('click', function () { hPage++; renderHistory(); });
+  $('#hExport').addEventListener('click', function () {
+    var list = histList(); if (!list.length) return showToast('warning', 'There are no movements to download.');
+    var names = { in: 'Stock in', out: 'Stock out', adj: 'Adjustment' };
+    var rows = [['Date', 'Movement number', 'Stock Keeping Unit', 'Product', 'Type', 'Quantity', 'Reference', 'Note', 'Recorded by']].concat(list.map(function (m) {
+      return [fmt(m.date, true), m.no, m.sku, m.product, names[m.type], m.qty, m.ref, m.note || '', m.by];
+    }));
+    var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' })); a.download = 'primebuild-stock-movements.csv'; a.click();
+    showToast('success', 'Movement report downloaded.');
   });
 
   $('#sales .btn-blue').addEventListener('click', function () {   // Add item to current order
@@ -337,21 +521,16 @@
   });
 
   /* ---------- Header, filters, role setup ---------- */
-  search.addEventListener('input', applySearch);
-  $$('#products .toolbar select, #movements .toolbar select').forEach(function (s) { s.addEventListener('change', renderAll); });
+  $$('#fCat, #fStatus').forEach(function (s) { s.addEventListener('change', renderAll); });
+  $('#prodSearch').addEventListener('input', renderProducts);
 
-  $('.profile-name').textContent = user.name + ' (' + (isAdmin ? 'Admin' : 'Staff') + ')';
+  $('.profile-name').textContent = user.name;
+  $('.role-badge').textContent = isAdmin ? 'Administrator' : 'Staff';
+  $('.menu-user').textContent = 'Signed in as ' + user.name;
   $('.avatar').textContent = user.name.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
 
-  var menu = $$('.profile-menu a');   // My profile, Store settings, Sign out
-  menu[0].addEventListener('click', function (e) { e.preventDefault(); toast('Signed in as ' + user.name + ' (' + user.role + ').'); });
-  menu[1].textContent = 'Reset demo data';
-  menu[1].addEventListener('click', function (e) {
-    e.preventDefault();
-    if (isAdmin && confirm('Reset all products, orders and sales to the sample data?')) { db = seed(); cart = []; commit('Demo data restored.'); }
-    else if (!isAdmin) toast('Only admins can reset data.');
-  });
-  menu[2].addEventListener('click', function (e) {
+  var logoutLink = $('.profile-menu a');   // only Sign out remains (demo reset removed)
+  logoutLink.addEventListener('click', function (e) {
     e.preventDefault();
     apiSync('logout');
     localStorage.removeItem('bs_user');
@@ -359,12 +538,22 @@
     location.replace('login.php');
   });
 
-  $('#dash .view-head a').addEventListener('click', function (e) { e.preventDefault(); $('#v-sales').checked = true; });
+  document.addEventListener('click', function (e) {   // buttons that jump to another page
+    var g = e.target.closest('[data-goto]'); if (g) { $('#' + g.dataset.goto).checked = true; window.scrollTo(0, 0); }
+  });
 
   if (!isAdmin) {   // Staff: no supplier module, no product add form
+    $$('[data-admin]').forEach(function (el) { el.style.display = 'none'; });
     $('.nav label[for="v-suppliers"]').style.display = 'none';
-    $('#products .panel').style.display = 'none';
   }
 
   renderAll();
 })();
+
+/* Close the mobile menu after choosing a page */
+document.querySelectorAll('.nav label').forEach(function (l) {
+  l.addEventListener('click', function () {
+    var el = document.getElementById('sidebar'), oc = bootstrap.Offcanvas.getInstance(el);
+    if (oc) oc.hide();
+  });
+});
