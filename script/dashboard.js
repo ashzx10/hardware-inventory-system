@@ -208,10 +208,12 @@
   function inCart(sku) { var l = cart.filter(function (c) { return c.sku === sku; })[0]; return l ? l.qty : 0; }
   function showSaleInfo() {
     var p = find($('#s-product').value), box = $('#s-info');
-    if (!p) { box.className = 'sale-info low'; box.innerHTML = '<i class="bi bi-info-circle"></i> No product is available to sell.'; return; }
+    if (!p) { box.className = 'sale-info low'; box.innerHTML = '<div class="sale-info-empty"><i class="bi bi-info-circle"></i> No product is available to sell.</div>'; return; }
     var left = p.stock - inCart(p.sku);
     box.className = 'sale-info' + (left <= p.reorder ? ' low' : '');
-    box.innerHTML = '<i class="bi bi-box-seam"></i> <strong>' + left + ' in stock</strong> &middot; Stock Keeping Unit ' + esc(p.sku) + ' &middot; ' + money(p.price) + ' each';
+    box.innerHTML = '<div class="sale-detail sale-availability"><span class="sale-detail-label"><i class="bi bi-box-seam"></i> Available now</span><strong>' + left + ' ' + (left === 1 ? 'unit' : 'units') + '</strong></div>' +
+      '<div class="sale-detail sale-price"><span class="sale-detail-label"><i class="bi bi-tag"></i> Unit price</span><strong>' + money(p.price) + '</strong></div>' +
+      '<div class="sale-detail sale-code"><span class="sale-detail-label">Stock Keeping Unit</span><span>' + esc(p.sku) + '</span></div>';
     $('#s-qty').max = Math.max(left, 1);
   }
   function fillSaleProducts() {
