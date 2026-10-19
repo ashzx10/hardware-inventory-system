@@ -2,14 +2,9 @@
 <html lang="en">
 
 <head>
-    <?php
-    // Keep relative links working even if Apache serves this page as index.php/.
-    $appBase = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
-    ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PrimeBuild | Hardware &amp; Construction Supply</title>
-    <base href="<?= htmlspecialchars($appBase . '/', ENT_QUOTES, 'UTF-8') ?>">
     <link rel="icon" type="image/png" href="assets/primebuild-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet"
@@ -43,8 +38,7 @@
                 <label for="v-suppliers"><i class="nav-icon bi bi-truck"></i>Suppliers &amp; Orders</label>
                 <label for="v-movements"><i class="nav-icon bi bi-arrow-left-right"></i>Stock Movements</label>
                 <label for="v-sales"><i class="nav-icon bi bi-cart-check"></i>Sales</label>
-                <label for="v-archive" data-admin><i class="nav-icon bi bi-archive"></i>Archive and Deleted
-                    Items</label>
+                <label for="v-archive" data-admin><i class="nav-icon bi bi-archive"></i>Archive Items</label>
             </nav>
             <footer class="sidebar-foot">PrimeBuild Inventory System</footer>
         </aside>
@@ -514,7 +508,7 @@
                                     <div class="field"><label for="s-qty">Quantity</label><input id="s-qty"
                                             type="number" min="1" step="1" value="1"></div>
                                     <div class="field wide">
-                                        <div class="sale-info" id="s-info"></div>
+                                        <div class="sale-info" id="s-info" aria-live="polite"></div>
                                     </div>
                                 </div>
                                 <div class="form-actions">
