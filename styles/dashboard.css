@@ -1311,3 +1311,440 @@ td.sku {
 .field textarea {
     resize: vertical;
 }
+
+/* ---------- Sales (Step 6) ---------- */
+.sale-info {
+    padding: 10px 14px;
+    border: 1px solid #2d2d2d;
+    border-left: 4px solid #22c55e;
+    border-radius: 4px;
+    background: #1b1b1b;
+    font-size: 14px;
+}
+
+.sale-info.low {
+    border-left-color: #fb923c;
+}
+
+.cart-list {
+    list-style: none;
+}
+
+.cart-line {
+    display: grid;
+    grid-template-columns: 1fr 72px auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.cart-name small {
+    display: block;
+    color: #8a8a8a;
+    font-size: 12px;
+}
+
+.cart-qty {
+    width: 72px;
+    padding: 6px 8px;
+    background: var(--pb-black);
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    color: var(--pb-text);
+}
+
+.cart-amt {
+    font-variant-numeric: tabular-nums;
+    min-width: 90px;
+    text-align: right;
+}
+
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 0 2px;
+    font-size: 18px;
+}
+
+.cart-total strong {
+    color: var(--pb-gold);
+}
+
+.totals-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.totals-strip div {
+    background: #1b1b1b;
+    border: 1px solid #2d2d2d;
+    border-radius: 6px;
+    padding: 8px 16px;
+    min-width: 140px;
+}
+
+.totals-strip span {
+    display: block;
+    font-size: 12px;
+    color: #9a9a9a;
+}
+
+.totals-strip strong {
+    font-size: 20px;
+    color: var(--pb-gold);
+}
+
+.pay-due {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    margin: 14px 0;
+    background: #1b1b1b;
+    border: 1px solid var(--pb-gold);
+    border-radius: 6px;
+    font-size: 18px;
+}
+
+.pay-due strong {
+    font-size: 30px;
+    color: var(--pb-gold);
+    font-family: "Barlow Condensed", Arial, sans-serif;
+}
+
+.pay-change {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #1b1b1b;
+    border-radius: 6px;
+}
+
+.pay-change strong {
+    color: #4ade80;
+    font-size: 20px;
+}
+
+#payModal .btn-ghost {
+    white-space: nowrap;
+}
+
+/* Receipt looks like paper so it prints well */
+.receipt {
+    background: #fff;
+    color: #171717;
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.receipt-band {
+    background: #171717;
+    padding: 14px;
+    text-align: center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.receipt-band img {
+    max-width: 220px;
+    width: 70%;
+}
+
+.receipt-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    padding: 16px;
+    border-bottom: 1px dashed #999;
+}
+
+.receipt-meta span {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.receipt-table {
+    min-width: 0;
+}
+
+.receipt-table th {
+    background: #f2f2f0;
+    color: #171717;
+    padding: 8px 12px;
+}
+
+.receipt-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e5e3;
+    color: #171717;
+}
+
+.receipt-table tbody tr:nth-child(even),
+.receipt-table tbody tr:hover {
+    background: transparent;
+}
+
+.receipt-sum {
+    padding: 12px 16px;
+}
+
+.receipt-sum div {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+}
+
+.receipt-sum div:first-child {
+    font-size: 18px;
+    border-bottom: 1px dashed #999;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+}
+
+.receipt-thanks {
+    text-align: center;
+    padding: 6px 16px 18px;
+    color: #555;
+    margin: 0;
+}
+
+@media (max-width: 575px) {
+    .receipt-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .cart-line {
+        grid-template-columns: 1fr 64px auto;
+    }
+
+    .cart-amt {
+        grid-column: 1 / 3;
+        text-align: left;
+    }
+}
+
+@media print {
+    body>*:not(#receiptModal) {
+        display: none !important;
+    }
+
+    #receiptModal {
+        position: static !important;
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    #receiptModal .modal-dialog {
+        margin: 0 auto;
+        max-width: 420px;
+    }
+
+    #receiptModal .modal-header,
+    #receiptModal .modal-footer {
+        display: none !important;
+    }
+
+    #receiptModal .modal-content,
+    #receiptModal .modal-body {
+        border: 0;
+        background: #fff;
+        padding: 0;
+    }
+}
+
+/* ---------- Suppliers and Purchase Orders (Step 7) ---------- */
+.row-actions {
+    flex-wrap: wrap;
+}
+
+.panel-body.pb-0 {
+    padding-bottom: 0;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.detail-list>div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.detail-list dt {
+    color: #9a9a9a;
+    font-weight: 500;
+}
+
+.detail-list dd {
+    margin: 0;
+    text-align: right;
+}
+
+/* ---------- Layout fixes ---------- */
+ul,
+ol {
+    padding-left: 0;
+    margin: 0;
+}
+
+/* Bootstrap indented every list */
+input::placeholder,
+textarea::placeholder {
+    color: #9a9a9a;
+    opacity: 1;
+}
+
+/* easier to read */
+.field input,
+.field select,
+.field textarea,
+.table-search {
+    text-overflow: ellipsis;
+}
+
+.field select {
+    padding-right: 38px;
+}
+
+.field.span2 {
+    grid-column: span 2;
+}
+
+.filter-bar .field:first-child {
+    grid-column: span 2;
+}
+
+/* search box gets room for its hint text */
+.panel-body.pb-0 {
+    padding-bottom: 16px;
+}
+
+/* space between search box and table header */
+.alert-list li:first-child {
+    padding-top: 0;
+}
+
+.stats {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+@media (min-width: 1200px) {
+    .stats {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 575px) {
+
+    .field.span2,
+    .filter-bar .field:first-child {
+        grid-column: auto;
+    }
+}
+
+/* ---------- Spacing and alignment fixes (round 2) ---------- */
+.panel-search {
+    padding: 16px 20px;
+}
+
+/* own class: Bootstrap's pb-0 forces zero spacing */
+#movements .form-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+}
+
+@media (max-width: 991.98px) {
+    #movements .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    #movements .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #movements .field.span2 {
+        grid-column: auto;
+    }
+}
+
+/* ---------- Archive and Deleted Items (Step 8) ---------- */
+#v-archive:checked~.main #archive {
+    display: block;
+}
+
+#v-archive:checked~.sidebar label[for="v-archive"] {
+    background: #2d2d2d;
+    color: var(--pb-gold);
+    border-left-color: var(--pb-gold);
+}
+
+.arch-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.arch-tabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--pb-panel);
+    border: 1px solid #2d2d2d;
+    border-radius: 6px;
+    color: var(--pb-text);
+    font-weight: 600;
+}
+
+.arch-tabs button:hover {
+    border-color: var(--pb-gold);
+}
+
+.arch-tabs button.active {
+    background: var(--pb-gold);
+    border-color: var(--pb-gold);
+    color: #171717;
+}
+
+.tab-count {
+    background: rgba(0, 0, 0, .25);
+    border-radius: 12px;
+    padding: 0 9px;
+    font-size: 12px;
+}
+
+.arch-tabs button:not(.active) .tab-count {
+    background: #2d2d2d;
+    color: var(--pb-gold);
+}
+
+.archive-note {
+    margin: 14px 0 0;
+    padding: 10px 14px;
+    background: #1b1b1b;
+    border-left: 4px solid #9a9a9a;
+    border-radius: 4px;
+    color: #b5b5b5;
+    font-size: 13px;
+}
+
+@media print {
+    .archive-note {
+        display: none !important;
+    }
+}
