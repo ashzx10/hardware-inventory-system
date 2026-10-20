@@ -1,6 +1,4 @@
--- PrimeBuild Hardware & Construction Supply: database (Step 2)
--- Run this on an empty server: it drops and recreates the "primebuild" database (name kept so config.php needs no change).
-CREATE DATABASE primebuild CHARACTER SET utf8mb4;
+CREATE DATABASE primebuild;
 USE primebuild;
 
 CREATE TABLE users (
