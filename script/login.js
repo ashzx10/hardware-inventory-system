@@ -1,8 +1,7 @@
-/* BuildStock login logic. Accounts are verified by api.php against MySQL. */
 (function () {
   'use strict';
 
-  // Already signed in? Go straight to the dashboard.
+  // If already signed in, go straight to the dashboard.
   if (localStorage.getItem('bs_user') || sessionStorage.getItem('bs_user')) {
     location.replace('index.php');
     return;
@@ -14,6 +13,16 @@
   function clearError() { error.textContent = ''; }
   form.addEventListener('input', clearError);
   form.addEventListener('change', clearError);
+
+  // Show / hide password
+  var toggle = document.querySelector('.toggle-pass');
+  toggle.addEventListener('click', function () {
+    var pw = form.elements.password;
+    var show = pw.type === 'password';
+    pw.type = show ? 'text' : 'password';
+    toggle.classList.toggle('showing', show);
+    toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
 
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -36,14 +45,14 @@
       return;
     }
 
-    // "Keep me signed in" uses localStorage; otherwise the session ends when the tab closes.
-    var store = form.elements.remember.checked ? localStorage : sessionStorage;
+    // The session ends when the tab closes.
+    var store = sessionStorage;
     store.setItem('bs_user', JSON.stringify(result.user));
     location.href = 'index.php';
   });
 
   document.querySelector('.row-between a').addEventListener('click', function (e) {
     e.preventDefault();
-    alert('Password resets are handled by your store administrator.');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('forgotModal')).show();   // a modal box, not a browser popup
   });
 })();
