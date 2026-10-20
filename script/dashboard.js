@@ -1,5 +1,4 @@
-/* PrimeBuild dashboard logic
-   All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
+/* All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
 (function () {
   'use strict';
 
