@@ -1,4 +1,3 @@
-/* PrimeBuild login logic. Accounts are verified by api.php against MySQL. */
 (function () {
   'use strict';
 
