@@ -1,6 +1,4 @@
--- PrimeBuild Hardware & Construction Supply: database (Step 2)
--- Run this on an empty server: it drops and recreates the "primebuild" database (name kept so config.php needs no change).
-CREATE DATABASE primebuild CHARACTER SET utf8mb4;
+CREATE DATABASE primebuild 
 USE primebuild;
 
 CREATE TABLE users (
@@ -9,7 +7,6 @@ CREATE TABLE users (
   full_name VARCHAR(120), role VARCHAR(20)
 );
 
--- Each category has a prefix used to generate Stock Keeping Units (CEM-0007)
 CREATE TABLE categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(120) UNIQUE, prefix VARCHAR(5), is_archived TINYINT(1) DEFAULT 0
@@ -38,7 +35,6 @@ CREATE TABLE purchase_orders (
   FOREIGN KEY (product_sku) REFERENCES products(sku)
 );
 
--- Payment methods: Cash, Bank Transfer, E-Wallet (no Credit)
 CREATE TABLE sales (
   id INT AUTO_INCREMENT PRIMARY KEY,
   receipt_no VARCHAR(40) UNIQUE, sold_at DATETIME, customer VARCHAR(160) DEFAULT '',
@@ -55,7 +51,6 @@ CREATE TABLE sale_items (
   FOREIGN KEY (product_sku) REFERENCES products(sku)
 );
 
--- reference is always filled by the system (receipt number, purchase order number or movement number)
 CREATE TABLE stock_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   movement_no VARCHAR(20) UNIQUE, moved_at DATETIME, product_sku VARCHAR(60), product_name VARCHAR(160),
