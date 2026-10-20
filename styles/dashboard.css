@@ -1,13 +1,5 @@
-/* =========================================================
-   BuildStock - CCS110 Finals Project
-   Industrial dark theme with direct, fixed color values.
-   Bootstrap remains responsible for its component behavior.
-   ========================================================= */
-
 /* ---------- 1. Reset & base ---------- */
-*,
-*::before,
-*::after {
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -21,7 +13,7 @@ body {
     min-height: 100%;
     background: #171717;
     color: #F2F2F0;
-    font-family: "Barlow", "Segoe UI", Arial, sans-serif;
+    font-family: "Segoe UI", Arial, sans-serif;
     font-size: 15px;
     line-height: 1.5;
 }
@@ -29,7 +21,7 @@ body {
 h1,
 h2,
 h3 {
-    font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     font-weight: 700;
     letter-spacing: 0.4px;
     color: #ffffff;
@@ -91,13 +83,13 @@ a {
     color: #171717;
     display: grid;
     place-items: center;
-    font-family: "Barlow Condensed", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     font-weight: 700;
     font-size: 22px;
 }
 
 .brand-name {
-    font-family: "Barlow Condensed", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     font-size: 24px;
     font-weight: 700;
     color: #ffffff;
@@ -373,7 +365,7 @@ a {
 }
 
 .stat-value {
-    font-family: "Barlow Condensed", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     font-size: 44px;
     font-weight: 700;
     color: #ffffff;
@@ -861,7 +853,7 @@ td.sku {
 }
 
 .topbar-title {
-    font-family: "Barlow Condensed", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     font-size: 20px;
     font-weight: 700;
     color: #F2F2F0;
@@ -1006,7 +998,7 @@ td.sku {
 }
 
 .modal-title {
-    font-family: "Barlow Condensed", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     font-size: 24px;
     color: #fff;
 }
@@ -1457,7 +1449,7 @@ td.sku {
 .pay-due strong {
     font-size: 30px;
     color: #FFB51B;
-    font-family: "Barlow Condensed", Arial, sans-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
 }
 
 .pay-change {
