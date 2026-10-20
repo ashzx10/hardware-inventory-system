@@ -1,4 +1,5 @@
-/* All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
+/* PrimeBuild dashboard logic
+   All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
 (function () {
   'use strict';
 
@@ -238,7 +239,7 @@
   function receiptHtml(s) {
     var named = s.customer && s.customer !== 'Walk-in customer';
     var lines = s.items.map(function (i) { return '<tr><td>' + esc(i.name) + '</td><td class="num">' + i.qty + '</td><td class="num">' + money(i.price) + '</td><td class="num">' + money(i.qty * i.price) + '</td></tr>'; }).join('');
-    return '<div class="receipt"><div class="receipt-band"><img src="assets/primebuild-logo.png" alt="PrimeBuild Hardware &amp; Construction Supply"></div>' +
+    return '<div class="receipt"><div class="receipt-band"><img src="assets/primebuild-logo.png" alt="PrimeBuild Hardware & Construction Supply"></div>' +
       '<div class="receipt-meta"><div><span>Receipt number</span><strong>' + esc(s.no) + '</strong></div><div><span>Date and time</span><strong>' + fmt(s.date, true) + '</strong></div>' +
       '<div><span>Cashier</span><strong>' + esc(s.cashier || '-') + '</strong></div><div><span>Payment method</span><strong>' + esc(s.pay) + '</strong></div>' +
       (named ? '<div><span>Customer</span><strong>' + esc(s.customer) + '</strong></div>' : '') +
