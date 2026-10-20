@@ -4,11 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PrimeBuild | Hardware &amp; Construction Supply</title>
+    <title>PrimeBuild | Hardware & Construction Supply</title>
     <link rel="icon" type="image/png" href="assets/primebuild-icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="styles/dashboard.css">
@@ -30,12 +27,12 @@
         <aside class="sidebar offcanvas offcanvas-start" tabindex="-1" id="sidebar" aria-label="Menu">
             <div class="brand">
                 <img class="brand-logo" src="assets/primebuild-logo.png"
-                    alt="PrimeBuild Hardware &amp; Construction Supply">
+                    alt="PrimeBuild Hardware & Construction Supply">
             </div>
             <nav class="nav" aria-label="Main navigation">
                 <label for="v-dash"><i class="nav-icon bi bi-speedometer2"></i>Dashboard</label>
-                <label for="v-products"><i class="nav-icon bi bi-box-seam"></i>Products &amp; Categories</label>
-                <label for="v-suppliers"><i class="nav-icon bi bi-truck"></i>Suppliers &amp; Orders</label>
+                <label for="v-products"><i class="nav-icon bi bi-box-seam"></i>Products & Categories</label>
+                <label for="v-suppliers"><i class="nav-icon bi bi-truck"></i>Suppliers & Orders</label>
                 <label for="v-movements"><i class="nav-icon bi bi-arrow-left-right"></i>Stock Movements</label>
                 <label for="v-sales"><i class="nav-icon bi bi-cart-check"></i>Sales</label>
                 <label for="v-archive" data-admin><i class="nav-icon bi bi-archive"></i>Archive Items</label>
@@ -208,7 +205,7 @@
                 <section class="view" id="products">
                     <header class="view-head">
                         <div>
-                            <h1>Products &amp; Categories</h1>
+                            <h1>Products & Categories</h1>
                             <p>Browse the catalog and keep prices and stock levels up to date.</p>
                         </div>
                         <div class="toolbar" data-admin>
@@ -262,7 +259,7 @@
                 <section class="view" id="suppliers">
                     <header class="view-head">
                         <div>
-                            <h1>Suppliers &amp; Purchase Orders</h1>
+                            <h1>Suppliers & Purchase Orders</h1>
                             <p>Manage who you buy from and track what is on the way.</p>
                         </div>
                     </header>
