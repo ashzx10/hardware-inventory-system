@@ -1784,3 +1784,63 @@ textarea::placeholder {
         display: none !important;
     }
 }
+
+/* =========================================================
+   Small-device fixes for PrimeBuild.
+   Paste this block at the very END of styles/dashboard.css
+   (it must come after every other rule).
+   ========================================================= */
+
+/* 1. Let grid and flex children shrink. Without this, a 640px-wide table
+      forces its whole panel (and the page) wider than a phone screen. */
+.main,
+.content,
+.panel { min-width: 0; }
+
+.split > *,
+.dash-two > *,
+.dash-three > *,
+.form-grid > *,
+.filter-bar > * { min-width: 0; }
+
+img { max-width: 100%; height: auto; }
+.table-wrap { -webkit-overflow-scrolling: touch; }
+
+/* 2. Single-column layouts must also be allowed to shrink (minmax(0, 1fr), not 1fr) */
+@media (max-width: 1199.98px) {
+  .split,
+  .dash-two,
+  .dash-two.wide-left,
+  .dash-three { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 3. Slide-in menu: it must sit ABOVE Bootstrap's dark backdrop (z-index 1040).
+      The old z-index: 20 hid it underneath, so the menu looked dimmed and could not be tapped. */
+@media (max-width: 991.98px) {
+  .sidebar.offcanvas.offcanvas-start {
+    z-index: 1045;
+    width: 270px;
+    max-width: 85vw;
+    overflow-y: auto;
+  }
+
+  /* keep the burger button reachable while scrolling */
+  .topbar { position: sticky; top: 0; z-index: 30; }
+}
+
+@media (max-width: 575.98px) {
+  .content { padding: 14px 12px; }
+  .panel-head { padding: 14px 16px; }
+  .panel-body { padding: 16px; }
+  .view-head { margin-bottom: 16px; }
+
+  .view-head .toolbar,
+  .panel-head .toolbar { width: 100%; }
+  .view-head .toolbar .btn { flex: 1 1 auto; }
+  .panel-head .toolbar select { flex: 1 1 140px; }
+  .panel-head > .btn { width: 100%; }
+
+  .totals-strip div { flex: 1 1 140px; }
+  .pager { justify-content: center; }
+  .topbar { padding: 10px 12px; }
+}
