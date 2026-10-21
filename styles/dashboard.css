@@ -1,3 +1,4 @@
+/* Styles the inventory dashboard, its data views, forms, tables, and responsive layout. */
 /* ---------- 1. Reset & base ---------- */
 * {
     box-sizing: border-box;
@@ -1938,4 +1939,19 @@ td.num:last-child {
 #po-product~small {
     color: #FFB51B;
     font-size: 13px;
+}
+
+/* ---------- Staff accounts ---------- */
+#v-staff:checked~.main #staff {
+    display: block;
+}
+
+#v-staff:checked~.sidebar label[for="v-staff"] {
+    background: #2d2d2d;
+    color: #FFB51B;
+    border-left-color: #FFB51B;
+}
+
+#staffModal .btn-ghost {
+    white-space: nowrap;
 }

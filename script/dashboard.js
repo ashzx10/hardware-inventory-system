@@ -1,5 +1,5 @@
-/* All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
 (function () {
+  // Initialize the dashboard in a private scope and avoid polluting the global namespace.
   'use strict';
 
   /* ---------- Session & role ---------- */
@@ -8,14 +8,23 @@
   var isAdmin = user.role === 'admin';
 
   /* ---------- Helpers ---------- */
+  // Select the first element matching a CSS selector.
   var $ = function (s) { return document.querySelector(s); };
+  // Return all elements matching a CSS selector as a regular array.
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  // Format a numeric amount as Philippine pesos.
   var money = function (n) { return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  // Escape special HTML characters before inserting untrusted text into markup.
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // Format an ISO date for display, optionally including its time.
   var fmt = function (iso, time) { return new Date(iso).toLocaleString('en-US', time ? { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' } : { month: 'short', day: 'numeric', year: 'numeric' }); };
+  // Build a status badge element as an HTML string.
   var badge = function (c, t) { return '<span class="badge badge-' + c + '">' + t + '</span>'; };
+  // Build a table cell, optionally assigning a CSS class.
   var td = function (v, c) { return '<td' + (c ? ' class="' + c + '"' : '') + '>' + v + '</td>'; };
+  // Build a row-action button carrying the action and record identifiers.
   var btn = function (s, a, id, cls, label) { return '<button class="btn btn-sm btn-' + cls + '" type="button" data-s="' + s + '" data-a="' + a + '" data-id="' + esc(id) + '">' + label + '</button>'; };
+  // Wrap action buttons in the table's standard action-cell layout.
   var actionCell = function (html) { return td('<div class="row-actions">' + html + '</div>', 'num'); };
 
   /* Toasts appear at the top center. type: success | warning | error | info */
@@ -26,6 +35,7 @@
     el.className = 'toast toast-' + type + ' show'; el.setAttribute('role', 'alert');
     el.innerHTML = '<i class="bi ' + (toastIcons[type] || toastIcons.info) + '"></i><div class="toast-text"></div><button type="button" class="btn-close" aria-label="Close"></button>';
     el.querySelector('.toast-text').textContent = message;
+    // Remove this notification from the toast stack.
     var close = function () { el.remove(); };
     el.querySelector('.btn-close').addEventListener('click', close);
     stack.appendChild(el); setTimeout(close, 5000);
@@ -64,10 +74,12 @@
     sel.innerHTML = items.map(function (i) { var a = [].concat(i); return '<option value="' + esc(a[0]) + '">' + esc(a[a.length - 1]) + '</option>'; }).join('');
     if ([].some.call(sel.options, function (o) { return o.value === v; })) sel.value = v;
   }
+  // Render table rows or a placeholder row when the result set is empty.
   function fillRows(tbody, items, cols, fn, msg) {
     tbody.innerHTML = items.length ? items.map(fn).join('') : '<tr class="empty-row"><td colspan="' + cols + '">' + msg + '</td></tr>';
   }
   /* ---------- Data ---------- */
+  // Make a synchronous API request for the initial session and dashboard data.
   function apiSync(action, data) {
     var request = new XMLHttpRequest();
     request.open('POST', 'api.php', false);
@@ -90,7 +102,9 @@
   if (!loaded) return;
   var db = loaded.data;
   var cart = [];
+  // Find a product in the currently loaded dashboard data by its SKU.
   function find(sku) { return db.products.filter(function (p) { return p.sku === sku; })[0]; }
+  // Return the CSS badge class and label that match a product's stock level.
   function status(p) { return p.stock <= 0 ? ['out', 'Out of Stock'] : p.stock <= p.reorder ? ['low', 'Low Stock'] : ['in', 'In Stock']; }
   /* Talk to api.php. Errors become toasts; the promise gives null on failure. */
   function api(action, data) {
@@ -104,6 +118,7 @@
       })
       .catch(function (e) { showToast('error', e.message || 'Cannot reach the server.'); return null; });
   }
+  // Reload dashboard data from the API and redraw the affected views.
   function refresh() { return api('load').then(function (res) { if (res) { db = res.data; renderAll(); } return res; }); }
   function fieldError(input, msg) {   // inline validation under the field
     var box = input.closest('.field').querySelector('.field-error');
@@ -112,6 +127,7 @@
   }
 
   /* ---------- Rendering ---------- */
+  // Filter products using the search text, category, and stock-status controls.
   function renderProducts() {
     fill($('#fCat'), ['All categories'].concat(db.categories.map(function (c) { return c.name; })));
     var q = $('#prodSearch').value.trim().toLowerCase(), fc = $('#fCat'), fs = $('#fStatus');
@@ -125,6 +141,7 @@
         (isAdmin ? actionCell(btn('prod', 'edit', p.sku, 'edit', '<i class="bi bi-pencil"></i> Edit') + btn('prod', 'del', p.sku, 'delete', '<i class="bi bi-archive"></i> Archive')) : '') + '</tr>';
     }, 'No products match these filters.');
   }
+  // Render the editable list of active product categories.
   function renderCategoryList() {
     $('#catList').innerHTML = db.categories.map(function (c) {
       return '<div class="cat-row" data-name="' + esc(c.name) + '"><span class="cat-prefix">' + esc(c.prefix) + '</span><input class="cat-input" value="' + esc(c.name) + '" aria-label="Category name"><button class="btn btn-sm btn-edit" data-cat="rename" type="button">Save name</button><button class="btn btn-sm btn-delete" data-cat="archive" type="button">Archive</button></div>';
@@ -132,6 +149,7 @@
   }
 
   /* ---------- Suppliers and purchase orders ---------- */
+  // Resolve a purchase order's SKU to a product name, with a fallback for missing products.
   function poProduct(o) { var p = find(o.product); return p ? p.name : o.product; }
   function fillPoProducts() {   // only the chosen supplier's products; the price is shown below, not in the list
     var sup = $('#po-supplier').value, sel = $('#po-product'), v = sel.value;
@@ -140,11 +158,13 @@
     if (list.some(function (p) { return p.sku === v; })) sel.value = v;
     showPoAmount();
   }
+  // Update the selected purchase-order product's unit price and calculated amount.
   function showPoAmount() {
     var p = find($('#po-product').value), q = +$('#po-qty').value || 0;
     $('#po-amount').value = p && q > 0 ? money(p.price * q) : '';
     $('#po-product').parentNode.querySelector('small').textContent = p ? 'Price each: ' + money(p.price) + '  |  Stock Keeping Unit ' + p.sku : 'Only products from this supplier are listed.';
   }
+  // Render filtered suppliers and purchase orders with their available actions.
   function renderSuppliers() {
     var sq = $('#supSearch').value.trim().toLowerCase();
     fillRows($('#supRows'), db.suppliers.filter(function (s) { return !sq || (s.name + ' ' + s.contact + ' ' + s.phone).toLowerCase().indexOf(sq) > -1; }), 5, function (s) {
@@ -163,11 +183,25 @@
     }, 'No purchase orders found.');
   }
 
+  /* ---------- Staff accounts (administrator) ---------- */
+  // Render the searchable list of active staff accounts.
+  function renderStaff() {
+    var q = $('#staffSearch').value.trim().toLowerCase();
+    var list = (db.staff || []).filter(function (s) { return !q || (s.name + ' ' + s.username).toLowerCase().indexOf(q) > -1; });
+    fillRows($('#staffRows'), list, 4, function (s) {
+      return '<tr>' + td(esc(s.name)) + td(esc(s.username)) + td(badge('in', 'Staff')) +
+        actionCell(btn('staff', 'del', s.username, 'delete', '<i class="bi bi-archive"></i> Archive')) + '</tr>';
+    }, 'No staff accounts yet. Select Add Staff to create one.');
+  }
+
   var moveLabel = { in: ['in', 'Stock in'], out: ['move-out', 'Stock out'], adj: ['info', 'Adjustment'] };
+  // Choose the quantity color class for a stock movement.
   var moveQtyClass = function (m) { return m.type === 'out' ? 'qty-moveout' : m.qty > 0 ? 'qty-in' : 'qty-out'; };
+  // Render a signed movement quantity in a consistently styled table cell.
   var moveQty = function (m) { return td((m.qty > 0 ? '+' : '\u2212') + Math.abs(m.qty), 'num ' + moveQtyClass(m)); };
   var hPage = 1, HSIZE = 10;
 
+  // Return movements matching the current history search and filter controls.
   function histList() {
     var q = $('#hSearch').value.trim().toLowerCase(), t = $('#hType').value, p = $('#hProduct').value, y = $('#hYear').value, f = $('#hFrom').value, to = $('#hTo').value;
     return db.moves.filter(function (m) {
@@ -176,6 +210,7 @@
         (!t || m.type === t) && (!p || m.sku === p) && (!y || day.slice(0, 4) === y) && (!f || day >= f) && (!to || day <= to);
     });
   }
+  // Render the current page of filtered movement history and pagination details.
   function renderHistory() {
     var list = histList(), pages = Math.max(1, Math.ceil(list.length / HSIZE));
     if (hPage > pages) hPage = pages;
@@ -192,6 +227,7 @@
     $('#m-sku').value = p ? p.sku : ''; $('#m-stock').value = p ? p.stock + ' in stock' : '';
     $('#m-qtyHelp').textContent = adj ? 'Use a minus sign to remove stock, for example -2.' : 'How many units moved.';
   }
+  // Render recent movements and populate the history filter controls.
   function renderMoves() {
     fillRows($('#recentMovesFull'), db.moves.slice(0, 5), 6, function (m) {
       var l = moveLabel[m.type];
@@ -204,8 +240,11 @@
   }
 
   /* ---------- Sales: current order ---------- */
+  // Calculate the current cart total from item quantities and prices.
   function cartTotal() { return cart.reduce(function (t, c) { return t + c.qty * c.price; }, 0); }
+  // Return the quantity of a SKU currently held in the sales cart.
   function inCart(sku) { var l = cart.filter(function (c) { return c.sku === sku; })[0]; return l ? l.qty : 0; }
+  // Show the selected sale product's remaining availability and unit price.
   function showSaleInfo() {
     var p = find($('#s-product').value), box = $('#s-info');
     if (!p) { box.className = 'sale-info low'; box.innerHTML = '<div class="sale-info-empty"><i class="bi bi-info-circle"></i> No product is available to sell.</div>'; return; }
@@ -216,6 +255,7 @@
       '<div class="sale-detail sale-code"><span class="sale-detail-label">Stock Keeping Unit</span><span>' + esc(p.sku) + '</span></div>';
     $('#s-qty').max = Math.max(left, 1);
   }
+  // Populate the sales product selector and retain a still-valid selection.
   function fillSaleProducts() {
     var sel = $('#s-product'), v = sel.value;
     sel.innerHTML = db.products.map(function (p) {
@@ -225,6 +265,7 @@
     if (v && ok.some(function (p) { return p.sku === v; })) sel.value = v; else if (ok.length) sel.value = ok[0].sku;
     showSaleInfo();
   }
+  // Render cart lines, totals, and the sale-completion button state.
   function renderCart() {
     $('#cartList').innerHTML = cart.length ? cart.map(function (c) {
       var p = find(c.sku), max = p ? p.stock : c.qty;
@@ -236,6 +277,7 @@
   }
 
   /* ---------- Sales: receipt ---------- */
+  // Build printable receipt markup from one sale and its item details.
   function receiptHtml(s) {
     var named = s.customer && s.customer !== 'Walk-in customer';
     var lines = s.items.map(function (i) { return '<tr><td>' + esc(i.name) + '</td><td class="num">' + i.qty + '</td><td class="num">' + money(i.price) + '</td><td class="num">' + money(i.qty * i.price) + '</td></tr>'; }).join('');
@@ -248,6 +290,7 @@
       '<div class="receipt-sum"><div><span>Total</span><strong>' + money(s.total) + '</strong></div><div><span>Amount received</span><span>' + money(s.received || s.total) + '</span></div><div><span>Change</span><span>' + money(s.change || 0) + '</span></div></div>' +
       '<p class="receipt-thanks">Thank you for shopping at PrimeBuild.</p></div>';
   }
+  // Open a receipt modal using a sale from active or archived records.
   function showReceipt(no, obj) {
     var s = obj || db.sales.filter(function (x) { return x.no === no; })[0];
     if (!s) return showToast('error', 'That receipt could not be found.');
@@ -257,6 +300,7 @@
 
   /* ---------- Sales: order history ---------- */
   var oPage = 1, OSIZE = 10;
+  // Return sales matching the current order-history search, date, product, and payment filters.
   function ordersList() {
     var q = $('#oSearch').value.trim().toLowerCase(), y = $('#oYear').value, per = $('#oPeriod').value, p = $('#oProduct').value, pay = $('#oPay').value;
     var f = $('#oFrom').value, t = $('#oTo').value, now = new Date(), today = dayKey(now);
@@ -271,6 +315,7 @@
         (!p || s.items.some(function (i) { return i.sku === p; })) && (!pay || s.pay === pay);
     });
   }
+  // Render the current page of matching sales and update totals and pagination controls.
   function renderOrders() {
     var list = ordersList(), pages = Math.max(1, Math.ceil(list.length / OSIZE));
     if (oPage > pages) oPage = pages;
@@ -285,6 +330,7 @@
     $('#oInfo').textContent = list.length ? 'Showing ' + (from + 1) + ' to ' + Math.min(from + OSIZE, list.length) + ' of ' + list.length + ' sales' : '0 sales';
     $('#oPrev').disabled = oPage <= 1; $('#oNext').disabled = oPage >= pages;
   }
+  // Populate sales filters, then redraw the order history and current cart.
   function renderSales() {
     fill($('#oProduct'), [['', 'All products']].concat(db.products.map(function (p) { return [p.sku, p.name]; })));
     var years = []; db.sales.forEach(function (s) { var y = s.date.slice(0, 4); if (years.indexOf(y) < 0) years.push(y); });
@@ -293,13 +339,16 @@
   }
 
   var charts = {};
+  // Replace a dashboard chart with the supplied configuration when Chart.js is available.
   function drawChart(id, cfg) {
     if (!window.Chart) return;
     if (charts[id]) charts[id].destroy();
     charts[id] = new Chart(document.getElementById(id), cfg);
   }
+  // Convert a date to the YYYY-MM-DD format used by date filters and comparisons.
   function dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
+  // Refresh dashboard statistics, recent activity, restock lists, and charts.
   function renderDash() {
     var now = new Date(), today = dayKey(now), month = today.slice(0, 7);
     var cats = {}, units = {}, value = 0;
@@ -308,8 +357,10 @@
     var out = db.products.filter(function (p) { return p.stock <= 0; });
     var salesToday = db.sales.filter(function (s) { return s.date.slice(0, 10) === today; });
     var salesMonth = db.sales.filter(function (s) { return s.date.slice(0, 7) === month; });
+    // Sum the total amounts for a collection of sales.
     var sum = function (l) { return l.reduce(function (t, s) { return t + s.total; }, 0); };
     var openPos = db.pos.filter(function (o) { return o.status === 'In transit'; }).length;
+    // Update a statistic's value and its explanatory text.
     var set = function (k, v, n) { $('#s-' + k).textContent = v; $('#n-' + k).textContent = n; };
     set('low', low.length, 'At or below reorder level');
     set('out', out.length, out.length ? 'Need an urgent order' : 'Everything is available');
@@ -365,6 +416,7 @@
     });
   }
 
+  // Populate form selectors from the currently loaded products, suppliers, and categories.
   function fillSelects() {
     var names = db.suppliers.map(function (s) { return s.name; });
     var prods = db.products.map(function (p) { return [p.sku, p.name]; });
@@ -372,7 +424,8 @@
     fillPoProducts(); fill($('#m-product'), db.products.map(function (p) { return [p.sku, p.name]; })); fillSaleProducts();
   }
 
-  function renderAll() { fillSelects(); renderCategoryList(); renderProducts(); renderSuppliers(); renderMoves(); renderSales(); renderDash(); }
+  // Refresh every dashboard view after data or filters change.
+  function renderAll() { fillSelects(); renderCategoryList(); renderProducts(); renderSuppliers(); renderStaff(); renderMoves(); renderSales(); renderDash(); }
 
   /* ---------- Row actions (Edit / Delete / status changes) ---------- */
   var actions = {
@@ -427,8 +480,9 @@
       var r = arch[archTab].filter(function (x) { return x.id === id; })[0]; if (!r) return;
       if (archTab === 'sales') return showReceipt(r.no, r);
       var rows = archTab === 'products' ? [['Stock Keeping Unit', r.id], ['Product', r.name], ['Category', r.category], ['Unit price', money(r.price)], ['Stock when archived', r.stock]]
-        : archTab === 'suppliers' ? [['Supplier', r.name], ['Contact person', r.contact || '-'], ['Phone number', r.phone || '-']]
-          : [['Purchase order number', r.id], ['Supplier', r.supplier], ['Quantity', r.qty], ['Order amount', money(r.amount)], ['Status', r.status]];
+        : archTab === 'staff' ? [['Full name', r.name], ['Username', r.username], ['Role', 'Staff']]
+          : archTab === 'suppliers' ? [['Supplier', r.name], ['Contact person', r.contact || '-'], ['Phone number', r.phone || '-']]
+            : [['Purchase order number', r.id], ['Supplier', r.supplier], ['Quantity', r.qty], ['Order amount', money(r.amount)], ['Status', r.status]];
       rows = rows.concat([['Archived by', r.archived_by || '-'], ['Archived on', archWhen(r.archived_at)], ['Reason', r.archive_reason || 'No reason given']]);
       $('#poBody').innerHTML = '<dl class="detail-list">' + rows.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>';
       $('#poModalTitle').textContent = r.name || r.id; bootstrap.Modal.getOrCreateInstance($('#poModal')).show();
@@ -440,6 +494,13 @@
       showConfirm({
         title: 'Restore item', message: 'Restore ' + label + '? It will appear in the normal lists again.' + extra, confirmText: 'Restore',
         onConfirm: function () { api('restore', { type: type, id: id }).then(function (res) { if (res) { loadArchive(); refresh(); showToast('success', label + ' was restored.'); } }); }
+      });
+    },
+    'staff-del': function (username) {
+      var s = (db.staff || []).filter(function (x) { return x.username === username; })[0]; if (!s) return;
+      showArchive({
+        title: 'Archive staff account', message: 'Archive ' + s.name + '? They will no longer be able to sign in. You can restore the account later from Archive Items.',
+        onConfirm: function (reason) { api('staff_archive', { id: username, reason: reason }).then(function (r) { if (r) { refresh(); showToast('success', s.name + ' was archived and can no longer sign in.'); } }); }
       });
     },
     'cart-rm': function (sku) { cart = cart.filter(function (c) { return c.sku !== sku; }); renderCart(); }
@@ -454,10 +515,12 @@
   /* ---------- Forms ---------- */
   /* ----- Products: add / edit modal ----- */
   var productModal = bootstrap.Modal.getOrCreateInstance($('#productModal')), editingSku = '';
+  // Ask the API for the next SKU preview for the selected category.
   function previewSku() {
     if (editingSku) return;
     api('next_sku', { category: $('#p-cat').value }).then(function (r) { if (r) $('#p-sku').value = r.sku; });
   }
+  // Populate and open the product form for creating a product or editing an existing one.
   function openProduct(p) {
     editingSku = p ? p.sku : '';
     $$('#productModal .field-error').forEach(function (b) { b.textContent = ''; });
@@ -503,6 +566,7 @@
 
   /* ----- Suppliers: add / edit modal ----- */
   var supplierModal = bootstrap.Modal.getOrCreateInstance($('#supplierModal')), editingSupplier = '';
+  // Populate and open the supplier form for creating or editing a supplier.
   function openSupplier(s) {
     editingSupplier = s ? s.name : '';
     $$('#supplierModal .field-error').forEach(function (b) { b.textContent = ''; });
@@ -520,6 +584,7 @@
   $('#supSearch').addEventListener('input', renderSuppliers); $('#poSearch').addEventListener('input', renderSuppliers); $('#poStatus').addEventListener('change', renderSuppliers);
 
   /* ----- Purchase orders: create ----- */
+  // Set the purchase-order delivery date to seven days from today and enforce today's minimum.
   function defaultPoDate() { var d = new Date(); d.setDate(d.getDate() + 7); $('#po-date').value = dayKey(d); $('#po-date').min = dayKey(new Date()); }
   defaultPoDate();
   $('#po-supplier').addEventListener('change', fillPoProducts); $('#po-product').addEventListener('change', showPoAmount); $('#po-qty').addEventListener('input', showPoAmount);
@@ -534,9 +599,32 @@
     });
   });
 
+  /* ----- Staff: add modal ----- */
+  var staffModal = bootstrap.Modal.getOrCreateInstance($('#staffModal'));
+  $('#btnAddStaff').addEventListener('click', function () {
+    $$('#staffModal .field-error').forEach(function (b) { b.textContent = ''; });
+    $('#st-name').value = ''; $('#st-username').value = ''; $('#st-password').value = ''; $('#st-password').type = 'password'; $('#st-toggle').textContent = 'Show';
+    staffModal.show();
+  });
+  $('#st-toggle').addEventListener('click', function () {
+    var pw = $('#st-password'), show = pw.type === 'password'; pw.type = show ? 'text' : 'password'; this.textContent = show ? 'Hide' : 'Show';
+  });
+  $('#st-save').addEventListener('click', function () {
+    var name = $('#st-name').value.trim(), uname = $('#st-username').value.trim().toLowerCase(), pass = $('#st-password').value, ok = true;
+    ok = fieldError($('#st-name'), name ? '' : 'Enter the full name.') && ok;
+    ok = fieldError($('#st-username'), /^[a-z0-9._-]{3,30}$/.test(uname) ? '' : 'Use 3 to 30 letters, numbers, dots or dashes.') && ok;
+    ok = fieldError($('#st-password'), pass.length >= 6 ? '' : 'The password needs at least 6 characters.') && ok;
+    if (!ok) return;
+    api('staff_save', { name: name, username: uname, password: pass }).then(function (r) {
+      if (r) { staffModal.hide(); refresh(); showToast('success', 'Account created for ' + name + '. They can sign in as Staff with the username ' + uname + '.'); }
+    });
+  });
+  $('#staffSearch').addEventListener('input', renderStaff);
+
   /* ----- Stock movements form ----- */
   fill($('#m-type'), isAdmin ? [['in', 'Stock in'], ['out', 'Stock out'], ['adj', 'Adjustment']] : [['in', 'Stock in'], ['out', 'Stock out']]);   // only the administrator sees Adjustment
   $('#m-product').addEventListener('change', showPicked); $('#m-type').addEventListener('change', showPicked);
+  // Clear the movement form and refresh the selected product's stock information.
   function clearMoveForm() { $('#m-qty').value = ''; $('#m-note').value = ''; showPicked(); }
   $('#m-clear').addEventListener('click', clearMoveForm);
   $('#m-save').addEventListener('click', function () {
@@ -615,6 +703,7 @@
   $('#receiptPrint').addEventListener('click', function () { window.print(); });
 
   /* ----- Sales: order history filters, pagination, download ----- */
+  // Show manual date fields only when the custom order-history period is selected.
   function showCustomDates() { var c = $('#oPeriod').value === 'custom'; $('#oFromBox').hidden = !c; $('#oToBox').hidden = !c; }
   ['oSearch', 'oYear', 'oPeriod', 'oFrom', 'oTo', 'oProduct', 'oPay'].forEach(function (id) {
     $('#' + id).addEventListener(id === 'oSearch' ? 'input' : 'change', function () { if (id === 'oPeriod') showCustomDates(); oPage = 1; renderOrders(); });
@@ -635,14 +724,17 @@
   });
 
   /* ---------- Archive and Deleted Items (administrator) ---------- */
-  var arch = { products: [], suppliers: [], sales: [], pos: [] }, archTab = 'products';
+  var arch = { products: [], suppliers: [], sales: [], pos: [], staff: [] }, archTab = 'products';
+  // Format an archive timestamp for display, returning a dash when it is absent.
   function archWhen(s) { return s ? fmt(String(s).replace(' ', 'T'), true) : '-'; }
   var archDef = {
     products: { title: 'Archived products', head: ['Stock Keeping Unit', 'Product', 'Category'], cells: function (r) { return td(esc(r.id), 'sku') + td(esc(r.name)) + td(esc(r.category)); } },
     suppliers: { title: 'Archived suppliers', head: ['Supplier', 'Contact person', 'Phone number'], cells: function (r) { return td(esc(r.name)) + td(esc(r.contact || '-')) + td(esc(r.phone || '-')); } },
     sales: { title: 'Archived sales', head: ['Receipt', 'Sale date', 'Total'], cells: function (r) { return td(esc(r.no)) + td(fmt(r.date, true)) + td(money(r.total)); } },
+    staff: { title: 'Archived staff', head: ['Full name', 'Username'], cells: function (r) { return td(esc(r.name)) + td(esc(r.username)); } },
     pos: { title: 'Archived purchase orders', head: ['Purchase order number', 'Supplier', 'Amount'], cells: function (r) { return td(esc(r.id)) + td(esc(r.supplier)) + td(money(r.amount)); } }
   };
+  // Render the selected archive category and its available restore or view actions.
   function renderArchive() {
     var def = archDef[archTab], q = $('#archSearch').value.trim().toLowerCase();
     Object.keys(archDef).forEach(function (k) {
@@ -656,6 +748,7 @@
         actionCell(btn('arch', 'view', r.id, 'edit', '<i class="bi bi-eye"></i> View details') + btn('arch', 'restore', r.id, 'edit', '<i class="bi bi-arrow-counterclockwise"></i> Restore')) + '</tr>';
     }, 'Nothing is archived here yet.');
   }
+  // Fetch archived records from the API and redraw the archive view.
   function loadArchive() {
     if (!isAdmin) return;
     return api('archive_list').then(function (res) {

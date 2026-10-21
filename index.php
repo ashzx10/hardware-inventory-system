@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <!-- Dashboard document metadata and styles shared by all inventory views. -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PrimeBuild | Hardware & Construction Supply</title>
@@ -12,6 +13,7 @@
 </head>
 
 <body>
+    <!-- Dashboard shell: navigation, role-aware views, and forms populated by dashboard.js. -->
     <div class="app">
 
         <!-- Tab controls (checked radio decides which view is visible) -->
@@ -22,8 +24,9 @@
         <input class="view-toggle" type="radio" name="view" id="v-sales">
         <input class="view-toggle" type="radio" name="view" id="v-history">
         <input class="view-toggle" type="radio" name="view" id="v-archive">
+        <input class="view-toggle" type="radio" name="view" id="v-staff">
 
-        <!-- ================= SIDEBAR ================= -->
+        <!-- Navigation controls that select dashboard views; admin-only links are hidden for staff. -->
         <aside class="sidebar offcanvas offcanvas-start" tabindex="-1" id="sidebar" aria-label="Menu">
             <div class="brand">
                 <img class="brand-logo" src="assets/primebuild-logo.png"
@@ -35,12 +38,13 @@
                 <label for="v-suppliers"><i class="nav-icon bi bi-truck"></i>Suppliers & Orders</label>
                 <label for="v-movements"><i class="nav-icon bi bi-arrow-left-right"></i>Stock Movements</label>
                 <label for="v-sales"><i class="nav-icon bi bi-cart-check"></i>Sales</label>
-                <label for="v-archive" data-admin><i class="nav-icon bi bi-archive"></i>Archive Items</label>
+                <label for="v-staff" data-admin><i class="nav-icon bi bi-people"></i>Staff Accounts</label>
+                <label for="v-archive" data-admin><i class="nav-icon bi bi-archive"></i>Archived Items</label>
             </nav>
             <footer class="sidebar-foot">PrimeBuild Inventory System</footer>
         </aside>
 
-        <!-- ================= MAIN ================= -->
+        <!-- Main header and content area containing the dashboard's tab panels. -->
         <div class="main">
 
             <header class="topbar">
@@ -66,7 +70,7 @@
 
             <main class="content">
 
-                <!-- ===== 1. DASHBOARD ===== -->
+                <!-- Dashboard overview with stock alerts, recent activity, and summary charts. -->
                 <section class="view" id="dash">
                     <header class="view-head">
                         <div>
@@ -201,7 +205,7 @@
                     </div>
                 </section>
 
-                <!-- ===== 2. PRODUCTS & CATEGORIES ===== -->
+                <!-- Product inventory and category-management view. -->
                 <section class="view" id="products">
                     <header class="view-head">
                         <div>
@@ -255,7 +259,7 @@
                     </section>
                 </section>
 
-                <!-- ===== 3. SUPPLIERS & PURCHASE ORDERS (administrator only) ===== -->
+                <!-- Administrator view for supplier records and purchase orders. -->
                 <section class="view" id="suppliers">
                     <header class="view-head">
                         <div>
@@ -357,7 +361,7 @@
                     </section>
                 </section>
 
-                <!-- ===== 4. STOCK MOVEMENTS ===== -->
+                <!-- Form and recent-activity table for recording stock changes. -->
                 <section class="view" id="movements">
                     <header class="view-head">
                         <div>
@@ -421,7 +425,7 @@
                     </section>
                 </section>
 
-                <!-- ===== 4b. STOCK MOVEMENT HISTORY ===== -->
+                <!-- Searchable, filterable, and exportable stock movement history. -->
                 <section class="view" id="history">
                     <header class="view-head">
                         <div>
@@ -481,7 +485,7 @@
                     </section>
                 </section>
 
-                <!-- ===== 5. SALES ===== -->
+                <!-- Point of sale and searchable sales history. -->
                 <section class="view" id="sales">
                     <header class="view-head">
                         <div>
@@ -585,7 +589,7 @@
                     </section>
                 </section>
 
-                <!-- ===== 6. ARCHIVE AND DELETED ITEMS (administrator only) ===== -->
+                <!-- Administrator view for inspecting and restoring archived records. -->
                 <section class="view" id="archive">
                     <header class="view-head">
                         <div>
@@ -602,6 +606,8 @@
                                 class="tab-count">0</span></button>
                         <button type="button" data-tab="pos" role="tab"><i class="bi bi-clipboard-check"></i> Purchase
                             Orders <span class="tab-count">0</span></button>
+                        <button type="button" data-tab="staff" role="tab"><i class="bi bi-people"></i> Staff <span
+                                class="tab-count">0</span></button>
                     </div>
                     <section class="panel">
                         <header class="panel-head">
@@ -619,10 +625,45 @@
                     </section>
                 </section>
 
+                <!-- Administrator view for creating and managing staff accounts. -->
+                <section class="view" id="staff">
+                    <header class="view-head">
+                        <div>
+                            <h1>Staff Accounts</h1>
+                            <p>Add the people who use the system. Archive an account when someone leaves.</p>
+                        </div>
+                        <div class="toolbar" data-admin>
+                            <button class="btn btn-primary" type="button" id="btnAddStaff"><i
+                                    class="bi bi-person-plus"></i> Add Staff</button>
+                        </div>
+                    </header>
+                    <section class="panel">
+                        <header class="panel-head">
+                            <h2><i class="bi bi-people"></i> Active staff</h2>
+                            <input class="table-search" id="staffSearch" type="search"
+                                placeholder="Search by name or username" aria-label="Search staff">
+                        </header>
+                        <div class="table-wrap">
+                            <table>
+                                <caption class="visually-hidden">Active staff accounts</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Full name</th>
+                                        <th scope="col">Username</th>
+                                        <th scope="col">Role</th>
+                                        <th scope="col" class="num">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffRows"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+
             </main>
         </div>
     </div>
-    <!-- Product modal (add and edit) -->
+    <!-- Product creation and editing form; dashboard.js fills fields and submits changes. -->
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content">
@@ -666,7 +707,7 @@
         </div>
     </div>
 
-    <!-- Category modal -->
+    <!-- Category creation and rename interface. -->
     <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -688,7 +729,7 @@
         </div>
     </div>
 
-    <!-- Payment modal (point of sale) -->
+    <!-- Confirms sale totals and collects cash amount or electronic payment reference. -->
     <div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -721,7 +762,7 @@
         </div>
     </div>
 
-    <!-- Receipt modal (also used by View) -->
+    <!-- Displays and prints a completed sale receipt. -->
     <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -737,7 +778,7 @@
         </div>
     </div>
 
-    <!-- Supplier modal (add and edit) -->
+    <!-- Supplier creation and editing form. -->
     <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -769,7 +810,7 @@
         </div>
     </div>
 
-    <!-- Purchase order details modal -->
+    <!-- Displays purchase order details selected from the orders table. -->
     <div class="modal fade" id="poModal" tabindex="-1" aria-labelledby="poModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -784,7 +825,45 @@
         </div>
     </div>
 
+    <!-- Administrator form for creating a staff account. -->
+    <div class="modal fade" id="staffModal" tabindex="-1" aria-labelledby="staffModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="staffModalTitle">Add staff</h2><button type="button" class="btn-close"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="field wide"><label for="st-name">Full name</label><input id="st-name" type="text"
+                                placeholder="e.g. Angelica Reyes" autocomplete="off">
+                            <div class="field-error"></div>
+                        </div>
+                        <div class="field wide"><label for="st-username">Username</label><input id="st-username"
+                                type="text" placeholder="e.g. angelica.reyes" autocomplete="off"
+                                autocapitalize="none"><small>Staff sign in with this. Letters, numbers, dots and dashes
+                                only.</small>
+                            <div class="field-error"></div>
+                        </div>
+                        <div class="field wide"><label for="st-password">Password</label>
+                            <div class="d-flex gap-2"><input id="st-password" type="password"
+                                    placeholder="At least 6 characters" autocomplete="new-password"><button
+                                    class="btn btn-ghost" type="button" id="st-toggle">Show</button></div><small>Give
+                                this to the employee. They cannot see it again after you save.</small>
+                            <div class="field-error"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-ghost"
+                        data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary"
+                        id="st-save">Create account</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live region where dashboard.js displays success, warning, and error notifications. -->
     <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <!-- Load Bootstrap components, chart rendering, and the dashboard's client-side behavior. -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="script/dashboard.js"></script>

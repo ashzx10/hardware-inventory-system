@@ -1,4 +1,5 @@
 (function () {
+  // Initialize login-page behavior without adding variables to the global scope.
   'use strict';
 
   // If already signed in, go straight to the dashboard.
@@ -10,6 +11,7 @@
   var form = document.querySelector('form');
   var error = document.getElementById('login-error');
 
+  // Clear a stale login error as soon as the user edits the form.
   function clearError() { error.textContent = ''; }
   form.addEventListener('input', clearError);
   form.addEventListener('change', clearError);

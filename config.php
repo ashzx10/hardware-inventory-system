@@ -7,6 +7,7 @@ const DB_NAME = 'primebuild';
 const DB_USER = 'root';
 const DB_PASS = '';
 
+/** Create and reuse the PDO connection to the configured MySQL database. */
 function db(): PDO {
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;

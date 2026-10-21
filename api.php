@@ -5,6 +5,7 @@ require __DIR__ . '/config.php';
 header('Content-Type: application/json; charset=utf-8');
 
 /* ---------- Helpers ---------- */
+/** Send a JSON response with the requested HTTP status and stop processing. */
 function reply(array $data, int $code = 200): never
 {
     http_response_code($code);
@@ -14,17 +15,19 @@ function reply(array $data, int $code = 200): never
 class ApiError extends Exception
 {
 }
-/* fail() throws, so any open database transaction is rolled back before the error is sent */
+/** Raise an API error; the request handler returns it after rolling back any open transaction. */
 function fail(string $message, int $code = 422): never
 {
     throw new ApiError($message, $code);
 }
+/** Require an authenticated session and return its user data. */
 function require_login(): array
 {
     if (empty($_SESSION['user']))
         reply(['error' => 'Please sign in first.'], 401);
     return $_SESSION['user'];
 }
+/** Require an authenticated administrator and return the user data. */
 function need_admin(): array
 {
     $u = require_login();
@@ -32,27 +35,31 @@ function need_admin(): array
         fail('Only an administrator can do this.', 403);
     return $u;
 }
+/** Read and decode the request body, falling back to standard form fields. */
 function body(): array
 {
     $data = json_decode(file_get_contents('php://input'), true);
     return is_array($data) ? $data : $_POST;
 }
+/** Execute a parameterized query and return all matching rows. */
 function rows(PDO $pdo, string $sql, array $args = []): array
 {
     $q = $pdo->prepare($sql);
     $q->execute($args);
     return $q->fetchAll();
 }
+/** Return a trimmed string value from request data, or an empty string if absent. */
 function text(array $in, string $key): string
 {
     return trim((string) ($in[$key] ?? ''));
 }
+/** Return the current server time in the database's datetime format. */
 function now(): string
 {
     return date('Y-m-d H:i:s');
 }
 
-/* Next running number, e.g. seq('purchase_orders','po_number','PO-') returns 2046 */
+/** Find the next numeric sequence value for records whose key uses the given prefix. */
 function seq(PDO $pdo, string $table, string $col, string $prefix): int
 {
     $q = $pdo->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING($col, " . (strlen($prefix) + 1) . ") AS UNSIGNED)), 0) FROM $table WHERE $col LIKE ?");
@@ -60,7 +67,7 @@ function seq(PDO $pdo, string $table, string $col, string $prefix): int
     return (int) $q->fetchColumn() + 1;
 }
 
-/* Every stock change goes through here so the log always matches the stock. The reference is never typed by a person. */
+/** Record a stock movement, update product stock, and return its generated movement number. */
 function add_movement(PDO $pdo, array $product, string $type, int $qty, string $ref, string $note, string $by): string
 {
     $no = 'MOV-' . str_pad((string) seq($pdo, 'stock_movements', 'movement_no', 'MOV-'), 5, '0', STR_PAD_LEFT);
@@ -69,6 +76,7 @@ function add_movement(PDO $pdo, array $product, string $type, int $qty, string $
     $pdo->prepare('UPDATE products SET stock = stock + ? WHERE sku = ?')->execute([$qty, $product['sku']]);
     return $no;
 }
+/** Lock and return an active product row for a transaction, or report that it is unavailable. */
 function lock_product(PDO $pdo, string $sku): array
 {
     $p = rows($pdo, 'SELECT * FROM products WHERE sku = ? AND is_archived = 0 FOR UPDATE', [$sku])[0] ?? null;
@@ -76,14 +84,17 @@ function lock_product(PDO $pdo, string $sku): array
         fail('That product could not be found.');
     return $p;
 }
+/** Mark a record archived and store who archived it, when, and why. */
 function archive_row(PDO $pdo, string $table, string $col, string $key, array $user, string $reason): void
 {
     $pdo->prepare("UPDATE $table SET is_archived=1, archived_by=?, archived_at=?, archive_reason=? WHERE $col=?")->execute([$user['name'], now(), $reason, $key]);
 }
+/** Restore an archived record and clear its archive metadata. */
 function restore_row(PDO $pdo, string $table, string $col, string $key): void
 {
     $pdo->prepare("UPDATE $table SET is_archived=0, archived_by=NULL, archived_at=NULL, archive_reason=NULL WHERE $col=?")->execute([$key]);
 }
+/** Run a callback atomically, committing on success and rolling back on any error. */
 function in_tx(PDO $pdo, callable $fn): mixed
 {
     $pdo->beginTransaction();
@@ -99,6 +110,7 @@ function in_tx(PDO $pdo, callable $fn): mixed
 }
 
 /* ---------- Read data ---------- */
+/** Load the line items for one sale receipt and normalize quantity and price types. */
 function sale_items(PDO $pdo, string $receipt): array
 {
     $items = rows($pdo, 'SELECT product_sku AS sku, product_name AS name, quantity AS qty, unit_price AS price FROM sale_items WHERE sale_receipt = ?', [$receipt]);
@@ -108,6 +120,7 @@ function sale_items(PDO $pdo, string $receipt): array
     }
     return $items;
 }
+/** Load active or archived sales, including their line items and normalized amounts. */
 function sale_rows(PDO $pdo, int $archived): array
 {
     $sales = rows($pdo, "SELECT receipt_no AS no, DATE_FORMAT(sold_at, '%Y-%m-%dT%H:%i:%s') AS date, COALESCE(NULLIF(customer,''),'Walk-in customer') AS customer, payment_method AS pay, status, total, amount_received AS received, change_amount AS `change`, payment_reference AS ref, cashier, archived_by, archived_at, archive_reason FROM sales WHERE is_archived = ? ORDER BY sold_at DESC, id DESC", [$archived]);
@@ -118,6 +131,7 @@ function sale_rows(PDO $pdo, int $archived): array
     }
     return $sales;
 }
+/** Build the data payload for the dashboard, limiting administrative data by role. */
 function state(PDO $pdo, array $user): array
 {
     $admin = $user['role'] === 'admin';
@@ -130,8 +144,9 @@ function state(PDO $pdo, array $user): array
     $moves = rows($pdo, "SELECT movement_no AS no, DATE_FORMAT(moved_at, '%Y-%m-%dT%H:%i:%s') AS date, product_sku AS sku, product_name AS product, type, quantity AS qty, reference AS ref, note, recorded_by AS `by` FROM stock_movements ORDER BY moved_at DESC, id DESC");
     foreach ($moves as &$m)
         $m['qty'] = (int) $m['qty'];
-    $suppliers = $pos = [];
+    $suppliers = $pos = $staff = [];
     if ($admin) {   // staff never receive supplier or purchase order data
+        $staff = rows($pdo, "SELECT username, full_name AS name FROM users WHERE role = 'staff' AND is_archived = 0 ORDER BY full_name");
         $suppliers = rows($pdo, 'SELECT name, contact, phone, status FROM suppliers WHERE is_archived = 0 ORDER BY id');
         $pos = rows($pdo, "SELECT po_number AS no, supplier_name AS supplier, product_sku AS product, quantity AS qty, DATE_FORMAT(ordered_at, '%Y-%m-%dT%H:%i') AS ordered, DATE_FORMAT(expected_at, '%Y-%m-%dT%H:%i') AS expected, amount, status FROM purchase_orders WHERE is_archived = 0 ORDER BY ordered_at DESC, id DESC");
         foreach ($pos as &$o) {
@@ -140,14 +155,16 @@ function state(PDO $pdo, array $user): array
         }
     }
     $categories = rows($pdo, 'SELECT name, prefix FROM categories WHERE is_archived = 0 ORDER BY name');
-    return ['products' => $products, 'suppliers' => $suppliers, 'pos' => $pos, 'moves' => $moves, 'sales' => sale_rows($pdo, 0), 'categories' => $categories];
+    return ['products' => $products, 'suppliers' => $suppliers, 'pos' => $pos, 'moves' => $moves, 'sales' => sale_rows($pdo, 0), 'categories' => $categories, 'staff' => $staff];
 }
+/** Load archived products, suppliers, staff, sales, and purchase orders for administrators. */
 function archive_state(PDO $pdo): array
 {
     $cols = 'archived_by, DATE_FORMAT(archived_at, \'%Y-%m-%d %H:%i\') AS archived_at, archive_reason';
     return [
         'products' => rows($pdo, "SELECT sku AS id, name, category, price, stock, $cols FROM products WHERE is_archived = 1 ORDER BY archived_at DESC"),
         'suppliers' => rows($pdo, "SELECT name AS id, name, contact, phone, $cols FROM suppliers WHERE is_archived = 1 ORDER BY archived_at DESC"),
+        'staff' => rows($pdo, "SELECT username AS id, username, full_name AS name, $cols FROM users WHERE role = 'staff' AND is_archived = 1 ORDER BY archived_at DESC"),
         'sales' => sale_rows($pdo, 1),
         'pos' => rows($pdo, "SELECT po_number AS id, po_number AS name, supplier_name AS supplier, quantity AS qty, amount, status, $cols FROM purchase_orders WHERE is_archived = 1 ORDER BY archived_at DESC"),
     ];
@@ -161,13 +178,15 @@ try {
 
     /* Login code is unchanged: another teammate owns it. */
     if ($action === 'login') {
-        $q = db()->prepare('SELECT id, username, email, password_hash, full_name, role FROM users WHERE role=? AND (LOWER(username)=? OR LOWER(COALESCE(email,\'\'))=?) LIMIT 1');
+        $q = db()->prepare('SELECT id, username, email, password_hash, full_name, role, is_archived FROM users WHERE role=? AND (LOWER(username)=? OR LOWER(COALESCE(email,\'\'))=?) LIMIT 1');
         $role = $input['role'] ?? '';
         $identity = strtolower(trim((string) ($input['username'] ?? '')));
         $q->execute([$role, $identity, $identity]);
         $u = $q->fetch();
         if (!$u || !hash_equals($u['password_hash'], hash('sha256', (string) ($input['password'] ?? ''))))
             reply(['error' => "Those details don't match a $role account. Check the role, ID and password."], 422);
+        if ((int) $u['is_archived'] === 1)
+            reply(['error' => 'This account has been disabled. Please contact your administrator.'], 403);
         $_SESSION['user'] = ['id' => $u['username'], 'name' => $u['full_name'], 'role' => $u['role']];
         reply(['user' => $_SESSION['user']]);
     }
@@ -178,6 +197,10 @@ try {
     }
     $user = require_login();
     $pdo = db();
+    if (!rows($pdo, 'SELECT 1 FROM users WHERE username=? AND role=? AND is_archived=0', [$user['id'], $user['role']])) {
+        $_SESSION = [];
+        reply(['error' => 'Your account is no longer active. Please sign in again.'], 401);
+    }
 
     if ($action === 'current_user') {
         $q = $pdo->prepare('SELECT username, full_name, role FROM users WHERE username=? AND role=? LIMIT 1');
@@ -229,6 +252,32 @@ try {
     }
 
     /* ----- Products (administrator) ----- */
+    /* ----- Staff accounts (administrator) ----- */
+    if ($action === 'staff_save') {
+        need_admin();
+        $name = text($input, 'name');
+        $uname = strtolower(text($input, 'username'));
+        $pass = (string) ($input['password'] ?? '');
+        if ($name === '')
+            fail("Enter the staff member's full name.");
+        if (!preg_match('/^[a-z0-9._-]{3,30}$/', $uname))
+            fail('The username needs 3 to 30 characters: letters, numbers, dots, dashes or underscores.');
+        if (strlen($pass) < 6)
+            fail('The password needs at least 6 characters.');
+        if (rows($pdo, 'SELECT 1 FROM users WHERE LOWER(username)=? OR LOWER(COALESCE(email, \'\'))=?', [$uname, $uname . '@primebuild.local']))
+            fail('That username is already taken. Choose another one.');
+        $pdo->prepare('INSERT INTO users (username,email,password_hash,full_name,role) VALUES (?,?,?,?,?)')
+            ->execute([$uname, $uname . '@primebuild.local', hash('sha256', $pass), $name, 'staff']);
+        reply(['ok' => true]);
+    }
+    if ($action === 'staff_archive') {   // only staff accounts can be archived, never an administrator
+        $u = need_admin();
+        $uname = text($input, 'id');
+        if (!rows($pdo, "SELECT 1 FROM users WHERE username=? AND role='staff' AND is_archived=0", [$uname]))
+            fail('That staff account could not be found.');
+        archive_row($pdo, 'users', 'username', $uname, $u, text($input, 'reason'));
+        reply(['ok' => true]);
+    }
     if ($action === 'next_sku') {   // preview of the automatic Stock Keeping Unit shown in the Add Product form
         need_admin();
         $prefix = rows($pdo, 'SELECT prefix FROM categories WHERE name=? AND is_archived=0', [text($input, 'category')])[0]['prefix'] ?? null;
@@ -434,7 +483,11 @@ try {
                 restore_row($pdo, 'suppliers', 'name', $id);
             elseif ($type === 'pos')
                 restore_row($pdo, 'purchase_orders', 'po_number', $id);
-            elseif ($type === 'sales') {   // re-deduct stock only if enough is available
+            elseif ($type === 'staff') {
+                if (!rows($pdo, "SELECT 1 FROM users WHERE username=? AND role='staff' AND is_archived=1", [$id]))
+                    fail('That staff account could not be found.');
+                restore_row($pdo, 'users', 'username', $id);
+            } elseif ($type === 'sales') {   // re-deduct stock only if enough is available
                 foreach (sale_items($pdo, $id) as $i) {
                     $p = rows($pdo, 'SELECT * FROM products WHERE sku=? FOR UPDATE', [$i['sku']])[0] ?? null;
                     if (!$p || $p['is_archived'] || (int) $p['stock'] < $i['qty'])

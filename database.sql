@@ -3,8 +3,9 @@ USE primebuild;
 
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(80), email VARCHAR(160), password_hash VARCHAR(64),
-  full_name VARCHAR(120), role VARCHAR(20)
+  username VARCHAR(80) UNIQUE, email VARCHAR(160), password_hash VARCHAR(64),
+  full_name VARCHAR(120), role VARCHAR(20),
+  is_archived TINYINT(1) DEFAULT 0, archived_by VARCHAR(120), archived_at DATETIME, archive_reason VARCHAR(255)
 );
 
 -- Each category has a prefix used to generate Stock Keeping Units (CEM-0007)

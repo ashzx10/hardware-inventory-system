@@ -1,3 +1,4 @@
+/* Styles the role-based sign-in page and its responsive layout. */
 body {
   background: #171717;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
@@ -6,6 +7,7 @@ body {
 a { color: #FFB51B; }
 a:hover { color: #FFC94D; }
 
+/* Layer the decorative background beneath the login panel. */
 /* ---------- Page + photo ---------- */
 .login-page {
   background: radial-gradient(circle at 80% 40%, #2b2b2b 0%, #171717 70%);
@@ -26,6 +28,7 @@ a:hover { color: #FFC94D; }
 }
 
 /* ---------- Curved glowing panel ---------- */
+/* Keep the form readable while the background photo remains visible beside it. */
 .form-panel {
   position: relative;
   z-index: 2;

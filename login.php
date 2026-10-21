@@ -2,6 +2,7 @@
 <html lang="en" data-bs-theme="dark">
 
 <head>
+  <!-- Set page metadata and load the Bootstrap and login-page styles. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in | PrimeBuild</title>
@@ -12,13 +13,14 @@
 </head>
 
 <body>
+  <!-- Login form: lets an administrator or staff member choose a role and enter credentials. -->
   <div class="login-page position-relative overflow-hidden min-vh-100">
 
-    <!-- ===== Background photo: replace assets/background.jpg with your own picture ===== -->
+    <!-- Decorative login background; hidden from assistive technology. -->
     <img class="bg-photo position-absolute top-0 start-0 w-100 h-100 object-fit-cover" src="assets/login-bg.jpg"
       alt="Background photo of a login page" aria-hidden="true">
 
-    <!-- ===== Login panel ===== -->
+    <!-- Main sign-in panel with branding, role selection, and credential fields. -->
     <main class="form-panel d-flex align-items-center min-vh-100">
       <section class="login-card w-100" aria-labelledby="login-title">
 
@@ -36,6 +38,7 @@
         </header>
 
         <form action="#" method="post">
+          <!-- These role controls determine which account type is submitted and which labels are shown. -->
           <input class="role-radio" type="radio" name="role" id="r-admin" value="admin" checked>
           <input class="role-radio" type="radio" name="role" id="r-staff" value="staff">
 
@@ -62,6 +65,7 @@
             </div>
           </fieldset>
 
+          <!-- Credentials are sent by script/login.js to the login API action. -->
           <div class="field mb-3">
             <label for="username" class="visually-hidden">
               <span class="when-admin">Admin username or email</span>
@@ -132,7 +136,7 @@
 
   </div>
 
-  <!-- Forgot password notice (a modal box instead of a browser popup) -->
+  <!-- Informational password-reset dialog; resets are handled by the store administrator. -->
   <div class="modal fade" id="forgotModal" tabindex="-1" aria-labelledby="forgotTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -147,6 +151,7 @@
       </div>
     </div>
   </div>
+  <!-- Bootstrap provides the modal behavior; login.js handles form submission and password visibility. -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script/login.js"></script>
 </body>
