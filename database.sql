@@ -88,10 +88,10 @@ INSERT INTO products (sku, name, category, supplier_name, price, stock, reorder_
 
 INSERT INTO purchase_orders (po_number, supplier_name, product_sku, quantity, ordered_at, expected_at, amount, status) VALUES
 ('PO-2038','Calabarzon Lumber Co.','PNT-0001',48,'2026-10-04','2026-10-08',30720.00,'Received'),
-('PO-2039','Calabarzon Lumber Co.','LMB-0001',40,'2026-09-28','2026-10-14',46000.00,'Pending'),
+('PO-2039','Calabarzon Lumber Co.','LMB-0001',40,'2026-09-28','2026-10-14',46000.00,'In transit'),
 ('PO-2040','Luzon Steel Works','STL-0001',200,'2026-10-03','2026-10-09',39600.00,'Received'),
 ('PO-2041','Pacific Cement Corp.','CEM-0001',200,'2026-10-06','2026-10-12',53000.00,'In transit'),
-('PO-2042','Metro Plumbing Supply','PLB-0001',100,'2026-10-12','2026-10-19',14200.00,'Pending');
+('PO-2042','Metro Plumbing Supply','PLB-0001',100,'2026-10-12','2026-10-19',14200.00,'In transit');
 
 INSERT INTO sales (receipt_no, sold_at, customer, payment_method, status, total, amount_received, change_amount, payment_reference, cashier) VALUES
 ('#S-10479','2026-10-09 09:30:00','','E-Wallet','Paid',390.00,390.00,0,'GC-55210','Angelica Reyes'),

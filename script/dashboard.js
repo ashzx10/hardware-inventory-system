@@ -1,5 +1,4 @@
-/* PrimeBuild dashboard logic
-   All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
+/* All data comes from api.php (MySQL). The browser only keeps the signed-in user's name and role. */
 (function () {
   'use strict';
 
@@ -134,16 +133,17 @@
 
   /* ---------- Suppliers and purchase orders ---------- */
   function poProduct(o) { var p = find(o.product); return p ? p.name : o.product; }
-  function fillPoProducts() {   // only the chosen supplier's products
+  function fillPoProducts() {   // only the chosen supplier's products; the price is shown below, not in the list
     var sup = $('#po-supplier').value, sel = $('#po-product'), v = sel.value;
     var list = db.products.filter(function (p) { return p.supplier === sup; });
-    sel.innerHTML = list.length ? list.map(function (p) { return '<option value="' + esc(p.sku) + '">' + esc(p.name) + ' (' + esc(p.sku) + ') - ' + money(p.price) + '</option>'; }).join('') : '<option value="">No products from this supplier</option>';
+    sel.innerHTML = list.length ? list.map(function (p) { return '<option value="' + esc(p.sku) + '">' + esc(p.name) + '</option>'; }).join('') : '<option value="">No products from this supplier</option>';
     if (list.some(function (p) { return p.sku === v; })) sel.value = v;
     showPoAmount();
   }
   function showPoAmount() {
     var p = find($('#po-product').value), q = +$('#po-qty').value || 0;
     $('#po-amount').value = p && q > 0 ? money(p.price * q) : '';
+    $('#po-product').parentNode.querySelector('small').textContent = p ? 'Price each: ' + money(p.price) + '  |  Stock Keeping Unit ' + p.sku : 'Only products from this supplier are listed.';
   }
   function renderSuppliers() {
     var sq = $('#supSearch').value.trim().toLowerCase();
@@ -155,9 +155,9 @@
     var pq = $('#poSearch').value.trim().toLowerCase(), ps = $('#poStatus').value;
     var list = db.pos.filter(function (o) { return (!pq || (o.no + ' ' + o.supplier + ' ' + poProduct(o)).toLowerCase().indexOf(pq) > -1) && (!ps || o.status === ps); });
     fillRows($('#poRows'), list, 8, function (o) {
-      var open = o.status === 'Pending' || o.status === 'In transit';
+      var open = o.status === 'In transit' || o.status === 'Pending';   // orders start as In transit; there is no separate Pending step
       var acts = btn('po', 'view', o.no, 'edit', '<i class="bi bi-eye"></i> View') +
-        (open ? btn('po', o.status === 'Pending' ? 'ship' : 'receive', o.no, 'edit', o.status === 'Pending' ? '<i class="bi bi-truck"></i> Mark shipped' : '<i class="bi bi-box-arrow-in-down"></i> Mark received') + btn('po', 'cancel', o.no, 'delete', '<i class="bi bi-x-circle"></i> Cancel')
+        (open ? btn('po', 'receive', o.no, 'edit', '<i class="bi bi-box-arrow-in-down"></i> Mark received') + btn('po', 'cancel', o.no, 'delete', '<i class="bi bi-x-circle"></i> Cancel')
           : btn('po', 'archive', o.no, 'delete', '<i class="bi bi-archive"></i> Archive'));
       return '<tr>' + td(esc(o.no)) + td(esc(o.supplier)) + td(esc(poProduct(o))) + td(o.qty, 'num') + td(fmt(o.expected)) + td(money(o.amount), 'num') + td(badge(cls[o.status] || 'info', esc(o.status))) + actionCell(acts) + '</tr>';
     }, 'No purchase orders found.');
@@ -309,7 +309,7 @@
     var salesToday = db.sales.filter(function (s) { return s.date.slice(0, 10) === today; });
     var salesMonth = db.sales.filter(function (s) { return s.date.slice(0, 7) === month; });
     var sum = function (l) { return l.reduce(function (t, s) { return t + s.total; }, 0); };
-    var openPos = db.pos.filter(function (o) { return o.status === 'Pending' || o.status === 'In transit'; }).length;
+    var openPos = db.pos.filter(function (o) { return o.status === 'In transit'; }).length;
     var set = function (k, v, n) { $('#s-' + k).textContent = v; $('#n-' + k).textContent = n; };
     set('low', low.length, 'At or below reorder level');
     set('out', out.length, out.length ? 'Need an urgent order' : 'Everything is available');
@@ -391,7 +391,6 @@
         onConfirm: function (reason) { api('supplier_archive', { id: name, reason: reason }).then(function (r) { if (r) { refresh(); showToast('success', name + ' was archived.'); } }); }
       });
     },
-    'po-ship': function (no) { api('po_status', { id: no, status: 'In transit' }).then(function (r) { if (r) { refresh(); showToast('success', no + ' is now in transit.'); } }); },
     'po-receive': function (no) {
       var o = db.pos.filter(function (x) { return x.no === no; })[0];
       showConfirm({
@@ -531,7 +530,7 @@
     ok = fieldError($('#po-date'), $('#po-date').value && $('#po-date').value >= dayKey(new Date()) ? '' : 'Choose a delivery date from today onward.') && ok;
     if (!ok) return;
     api('po_create', { supplier: $('#po-supplier').value, sku: sku, qty: qty, expected: $('#po-date').value }).then(function (r) {
-      if (r) { $('#po-qty').value = ''; defaultPoDate(); refresh(); showToast('success', 'Purchase order ' + r.no + ' placed.'); }
+      if (r) { $('#po-qty').value = ''; defaultPoDate(); refresh(); showToast('success', 'Purchase order ' + r.no + ' placed. It is now in transit.'); }
     });
   });
 

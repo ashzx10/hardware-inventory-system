@@ -315,7 +315,7 @@ try {
         $no = in_tx($pdo, function () use ($pdo, $sup, $p, $qty, $expected) {
             $no = 'PO-' . seq($pdo, 'purchase_orders', 'po_number', 'PO-');
             $pdo->prepare('INSERT INTO purchase_orders (po_number,supplier_name,product_sku,quantity,ordered_at,expected_at,amount,status) VALUES (?,?,?,?,?,?,?,?)')
-                ->execute([$no, $sup, $p['sku'], $qty, now(), $expected, $qty * (float) $p['price'], 'Pending']);
+                ->execute([$no, $sup, $p['sku'], $qty, now(), $expected, $qty * (float) $p['price'], 'In transit']);
             return $no;
         });
         reply(['ok' => true, 'no' => $no]);

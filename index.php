@@ -330,7 +330,6 @@
                                     aria-label="Search purchase orders">
                                 <select id="poStatus" aria-label="Filter by status">
                                     <option value="">All statuses</option>
-                                    <option>Pending</option>
                                     <option>In transit</option>
                                     <option>Received</option>
                                     <option>Cancelled</option>

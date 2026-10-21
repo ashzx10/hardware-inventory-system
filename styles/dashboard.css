@@ -1917,3 +1917,25 @@ img {
         border-radius: 0 0 6px 6px;
     }
 }
+
+/* 6. Row action buttons (Edit / Archive / View ...) stay side by side on every screen size.
+      If the row is too wide, the table scrolls sideways instead. */
+.row-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+
+.row-actions .btn {
+    flex: none;
+    white-space: nowrap;
+}
+
+td.num:last-child {
+    white-space: nowrap;
+}
+
+/* 7. Purchase order form: price and Stock Keeping Unit shown under the product, not inside the dropdown */
+#po-product~small {
+    color: #FFB51B;
+    font-size: 13px;
+}
