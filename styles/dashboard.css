@@ -1785,12 +1785,6 @@ textarea::placeholder {
     }
 }
 
-/* =========================================================
-   Small-device fixes for PrimeBuild.
-   Paste this block at the very END of styles/dashboard.css
-   (it must come after every other rule).
-   ========================================================= */
-
 /* 1. Let grid and flex children shrink. Without this, a 640px-wide table
       forces its whole panel (and the page) wider than a phone screen. */
 .main,
@@ -1828,6 +1822,7 @@ img { max-width: 100%; height: auto; }
   .topbar { position: sticky; top: 0; z-index: 30; }
 }
 
+/* 4. Phones: tighter spacing, buttons and filters use the full width */
 @media (max-width: 575.98px) {
   .content { padding: 14px 12px; }
   .panel-head { padding: 14px 16px; }
