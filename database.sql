@@ -1,6 +1,7 @@
 CREATE DATABASE primebuild;
 USE primebuild;
 
+-- User accounts, role assignments, and archive audit details.
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(80) UNIQUE, email VARCHAR(160), password_hash VARCHAR(64),
@@ -14,12 +15,14 @@ CREATE TABLE categories (
   name VARCHAR(120) UNIQUE, prefix VARCHAR(5), is_archived TINYINT(1) DEFAULT 0
 );
 
+-- Supplier directory; archived suppliers remain available for audit and restoration.
 CREATE TABLE suppliers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(160) UNIQUE, contact VARCHAR(120), phone VARCHAR(60), status VARCHAR(20),
   is_archived TINYINT(1) DEFAULT 0, archived_by VARCHAR(120), archived_at DATETIME, archive_reason VARCHAR(255)
 );
 
+-- Product catalog and current stock; supplier names link products to the supplier table.
 CREATE TABLE products (
   id INT AUTO_INCREMENT PRIMARY KEY,
   sku VARCHAR(60) UNIQUE, name VARCHAR(160), category VARCHAR(120),
@@ -28,6 +31,7 @@ CREATE TABLE products (
   FOREIGN KEY (supplier_name) REFERENCES suppliers(name)
 );
 
+-- Purchase orders retain their supplier, product, delivery, amount, and archive status.
 CREATE TABLE purchase_orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
   po_number VARCHAR(40) UNIQUE, supplier_name VARCHAR(160), product_sku VARCHAR(60),
@@ -38,6 +42,7 @@ CREATE TABLE purchase_orders (
 );
 
 -- Payment methods: Cash, Bank Transfer, E-Wallet (no Credit)
+-- Each sale header stores payment totals and cashier details; individual products are in sale_items.
 CREATE TABLE sales (
   id INT AUTO_INCREMENT PRIMARY KEY,
   receipt_no VARCHAR(40) UNIQUE, sold_at DATETIME, customer VARCHAR(160) DEFAULT '',
@@ -55,6 +60,7 @@ CREATE TABLE sale_items (
 );
 
 -- reference is always filled by the system (receipt number, purchase order number or movement number)
+-- Movement quantities are signed: positive for stock in and negative for stock out or deductions.
 CREATE TABLE stock_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   movement_no VARCHAR(20) UNIQUE, moved_at DATETIME, product_sku VARCHAR(60), product_name VARCHAR(160),
@@ -62,6 +68,7 @@ CREATE TABLE stock_movements (
   FOREIGN KEY (product_sku) REFERENCES products(sku)
 );
 
+-- Sample users for the initial local installation.
 INSERT INTO users (username, email, password_hash, full_name, role) VALUES
 ('admin', 'admin@primebuild.local', SHA2('admin123', 256), 'Marco Dela Rosa', 'admin'),
 ('staff', 'staff@primebuild.local', SHA2('staff123', 256), 'Angelica Reyes', 'staff'),
@@ -69,6 +76,7 @@ INSERT INTO users (username, email, password_hash, full_name, role) VALUES
 ('juan.reyes', 'juan.reyes@primebuild.local', SHA2('staff123', 256), 'Juan Reyes', 'staff'),
 ('anna.mendoza', 'anna.mendoza@primebuild.local', SHA2('admin123', 256), 'Anna Mendoza', 'admin');
 
+-- Seed categories, suppliers, and products for the dashboard's initial inventory.
 INSERT INTO categories (name, prefix) VALUES
 ('Cement & Aggregates','CEM'),('Steel & Rebar','STL'),('Lumber & Plywood','LMB'),('Plumbing','PLB'),
 ('Electrical','ELC'),('Paint & Finishes','PNT'),('Fasteners & Hardware','FST');
@@ -77,7 +85,8 @@ INSERT INTO suppliers (name, contact, phone, status) VALUES
 ('Pacific Cement Corp.','Ramon Villanueva','0917 555 0142','Active'),
 ('Luzon Steel Works','Angela Tan','0928 555 0187','Active'),
 ('Calabarzon Lumber Co.','Joel Mendoza','0905 555 0119','On hold'),
-('Metro Plumbing Supply','Roberto Flores','0917 555 0201','Active');
+('Metro Plumbing Supply','Roberto Flores','0917 555 0201','Active'),
+('Prime Electrical Depot','Grace Lim','0917 555 0202','Active');
 
 INSERT INTO products (sku, name, category, supplier_name, price, stock, reorder_level) VALUES
 ('CEM-0001','Portland Cement 40kg','Cement & Aggregates','Pacific Cement Corp.',265.00,12,20),
@@ -85,8 +94,14 @@ INSERT INTO products (sku, name, category, supplier_name, price, stock, reorder_
 ('LMB-0001','Marine Plywood 1/2"','Lumber & Plywood','Calabarzon Lumber Co.',1150.00,0,15),
 ('PLB-0001','PVC Pipe 2" x 3m','Plumbing','Metro Plumbing Supply',142.00,8,20),
 ('FST-0001','Common Wire Nails 3"','Fasteners & Hardware','Luzon Steel Works',78.00,96,20),
-('PNT-0001','Latex Paint, Flat White 4L','Paint & Finishes','Calabarzon Lumber Co.',640.00,58,15);
+('PNT-0001','Latex Paint, Flat White 4L','Paint & Finishes','Calabarzon Lumber Co.',640.00,58,15),
+('ELC-0001','Electrical Wire 3.5mm x 100m','Electrical','Prime Electrical Depot',2850.00,18,10),
+('ELC-0002','Circuit Breaker 20 Amp','Electrical','Prime Electrical Depot',325.00,40,10),
+('ELC-0003','Light Bulb 9 Watt, Daylight','Electrical','Prime Electrical Depot',95.00,120,30),
+('ELC-0004','Duplex Outlet, White','Electrical','Prime Electrical Depot',85.00,80,20),
+('ELC-0005','Electrical Tape, Black','Electrical','Prime Electrical Depot',45.00,150,40);
 
+-- Seed example purchase orders, sales, sale lines, and stock movements.
 INSERT INTO purchase_orders (po_number, supplier_name, product_sku, quantity, ordered_at, expected_at, amount, status) VALUES
 ('PO-2038','Calabarzon Lumber Co.','PNT-0001',48,'2026-10-04','2026-10-08',30720.00,'Received'),
 ('PO-2039','Calabarzon Lumber Co.','LMB-0001',40,'2026-09-28','2026-10-14',46000.00,'In transit'),

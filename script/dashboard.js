@@ -1,5 +1,5 @@
+// Initialize the dashboard in a private scope and avoid polluting the global namespace.
 (function () {
-  // Initialize the dashboard in a private scope and avoid polluting the global namespace.
   'use strict';
 
   /* ---------- Session & role ---------- */
@@ -10,7 +10,7 @@
   /* ---------- Helpers ---------- */
   // Select the first element matching a CSS selector.
   var $ = function (s) { return document.querySelector(s); };
-  // Return all elements matching a CSS selector as a regular array.
+  // Return all matching elements as a regular array.
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
   // Format a numeric amount as Philippine pesos.
   var money = function (n) { return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -22,7 +22,7 @@
   var badge = function (c, t) { return '<span class="badge badge-' + c + '">' + t + '</span>'; };
   // Build a table cell, optionally assigning a CSS class.
   var td = function (v, c) { return '<td' + (c ? ' class="' + c + '"' : '') + '>' + v + '</td>'; };
-  // Build a row-action button carrying the action and record identifiers.
+  // Build a row-action button carrying action and record identifiers.
   var btn = function (s, a, id, cls, label) { return '<button class="btn btn-sm btn-' + cls + '" type="button" data-s="' + s + '" data-a="' + a + '" data-id="' + esc(id) + '">' + label + '</button>'; };
   // Wrap action buttons in the table's standard action-cell layout.
   var actionCell = function (html) { return td('<div class="row-actions">' + html + '</div>', 'num'); };
@@ -74,13 +74,13 @@
     sel.innerHTML = items.map(function (i) { var a = [].concat(i); return '<option value="' + esc(a[0]) + '">' + esc(a[a.length - 1]) + '</option>'; }).join('');
     if ([].some.call(sel.options, function (o) { return o.value === v; })) sel.value = v;
   }
-  // Render table rows or a placeholder row when the result set is empty.
   function fillRows(tbody, items, cols, fn, msg) {
+    // Keep empty results visible instead of leaving a blank table.
     tbody.innerHTML = items.length ? items.map(fn).join('') : '<tr class="empty-row"><td colspan="' + cols + '">' + msg + '</td></tr>';
   }
   /* ---------- Data ---------- */
-  // Make a synchronous API request for the initial session and dashboard data.
   function apiSync(action, data) {
+    // Load the initial session and dashboard data before rendering.
     var request = new XMLHttpRequest();
     request.open('POST', 'api.php', false);
     request.setRequestHeader('Content-Type', 'application/json');
@@ -102,9 +102,9 @@
   if (!loaded) return;
   var db = loaded.data;
   var cart = [];
-  // Find a product in the currently loaded dashboard data by its SKU.
+  // Look up a product by its stock keeping unit in the loaded data.
   function find(sku) { return db.products.filter(function (p) { return p.sku === sku; })[0]; }
-  // Return the CSS badge class and label that match a product's stock level.
+  // Return the stock label and badge class for a product.
   function status(p) { return p.stock <= 0 ? ['out', 'Out of Stock'] : p.stock <= p.reorder ? ['low', 'Low Stock'] : ['in', 'In Stock']; }
   /* Talk to api.php. Errors become toasts; the promise gives null on failure. */
   function api(action, data) {
@@ -118,7 +118,7 @@
       })
       .catch(function (e) { showToast('error', e.message || 'Cannot reach the server.'); return null; });
   }
-  // Reload dashboard data from the API and redraw the affected views.
+  // Reload dashboard data from the API and redraw the views.
   function refresh() { return api('load').then(function (res) { if (res) { db = res.data; renderAll(); } return res; }); }
   function fieldError(input, msg) {   // inline validation under the field
     var box = input.closest('.field').querySelector('.field-error');
@@ -127,7 +127,7 @@
   }
 
   /* ---------- Rendering ---------- */
-  // Filter products using the search text, category, and stock-status controls.
+  // Filter products by search text, category, and stock status.
   function renderProducts() {
     fill($('#fCat'), ['All categories'].concat(db.categories.map(function (c) { return c.name; })));
     var q = $('#prodSearch').value.trim().toLowerCase(), fc = $('#fCat'), fs = $('#fStatus');
@@ -158,13 +158,13 @@
     if (list.some(function (p) { return p.sku === v; })) sel.value = v;
     showPoAmount();
   }
-  // Update the selected purchase-order product's unit price and calculated amount.
+  // Update the selected product's unit price and calculated order amount.
   function showPoAmount() {
     var p = find($('#po-product').value), q = +$('#po-qty').value || 0;
     $('#po-amount').value = p && q > 0 ? money(p.price * q) : '';
     $('#po-product').parentNode.querySelector('small').textContent = p ? 'Price each: ' + money(p.price) + '  |  Stock Keeping Unit ' + p.sku : 'Only products from this supplier are listed.';
   }
-  // Render filtered suppliers and purchase orders with their available actions.
+  // Render suppliers and purchase orders using their current search and status filters.
   function renderSuppliers() {
     var sq = $('#supSearch').value.trim().toLowerCase();
     fillRows($('#supRows'), db.suppliers.filter(function (s) { return !sq || (s.name + ' ' + s.contact + ' ' + s.phone).toLowerCase().indexOf(sq) > -1; }), 5, function (s) {
@@ -201,7 +201,7 @@
   var moveQty = function (m) { return td((m.qty > 0 ? '+' : '\u2212') + Math.abs(m.qty), 'num ' + moveQtyClass(m)); };
   var hPage = 1, HSIZE = 10;
 
-  // Return movements matching the current history search and filter controls.
+  // Apply the movement history's text, type, product, year, and date filters.
   function histList() {
     var q = $('#hSearch').value.trim().toLowerCase(), t = $('#hType').value, p = $('#hProduct').value, y = $('#hYear').value, f = $('#hFrom').value, to = $('#hTo').value;
     return db.moves.filter(function (m) {
@@ -210,7 +210,7 @@
         (!t || m.type === t) && (!p || m.sku === p) && (!y || day.slice(0, 4) === y) && (!f || day >= f) && (!to || day <= to);
     });
   }
-  // Render the current page of filtered movement history and pagination details.
+  // Render one page of movement history and update its pagination controls.
   function renderHistory() {
     var list = histList(), pages = Math.max(1, Math.ceil(list.length / HSIZE));
     if (hPage > pages) hPage = pages;
@@ -244,7 +244,7 @@
   function cartTotal() { return cart.reduce(function (t, c) { return t + c.qty * c.price; }, 0); }
   // Return the quantity of a SKU currently held in the sales cart.
   function inCart(sku) { var l = cart.filter(function (c) { return c.sku === sku; })[0]; return l ? l.qty : 0; }
-  // Show the selected sale product's remaining availability and unit price.
+  // Show the selected product's remaining availability and unit price.
   function showSaleInfo() {
     var p = find($('#s-product').value), box = $('#s-info');
     if (!p) { box.className = 'sale-info low'; box.innerHTML = '<div class="sale-info-empty"><i class="bi bi-info-circle"></i> No product is available to sell.</div>'; return; }
@@ -255,7 +255,7 @@
       '<div class="sale-detail sale-code"><span class="sale-detail-label">Stock Keeping Unit</span><span>' + esc(p.sku) + '</span></div>';
     $('#s-qty').max = Math.max(left, 1);
   }
-  // Populate the sales product selector and retain a still-valid selection.
+  // Populate the sales selector and retain a still-valid product selection.
   function fillSaleProducts() {
     var sel = $('#s-product'), v = sel.value;
     sel.innerHTML = db.products.map(function (p) {
@@ -277,7 +277,7 @@
   }
 
   /* ---------- Sales: receipt ---------- */
-  // Build printable receipt markup from one sale and its item details.
+  // Build printable receipt markup from a sale and its item details.
   function receiptHtml(s) {
     var named = s.customer && s.customer !== 'Walk-in customer';
     var lines = s.items.map(function (i) { return '<tr><td>' + esc(i.name) + '</td><td class="num">' + i.qty + '</td><td class="num">' + money(i.price) + '</td><td class="num">' + money(i.qty * i.price) + '</td></tr>'; }).join('');
@@ -290,7 +290,7 @@
       '<div class="receipt-sum"><div><span>Total</span><strong>' + money(s.total) + '</strong></div><div><span>Amount received</span><span>' + money(s.received || s.total) + '</span></div><div><span>Change</span><span>' + money(s.change || 0) + '</span></div></div>' +
       '<p class="receipt-thanks">Thank you for shopping at PrimeBuild.</p></div>';
   }
-  // Open a receipt modal using a sale from active or archived records.
+  // Open a receipt from active sales or an explicitly supplied archived sale.
   function showReceipt(no, obj) {
     var s = obj || db.sales.filter(function (x) { return x.no === no; })[0];
     if (!s) return showToast('error', 'That receipt could not be found.');
@@ -300,7 +300,7 @@
 
   /* ---------- Sales: order history ---------- */
   var oPage = 1, OSIZE = 10;
-  // Return sales matching the current order-history search, date, product, and payment filters.
+  // Return sales matching the current order-history search and filters.
   function ordersList() {
     var q = $('#oSearch').value.trim().toLowerCase(), y = $('#oYear').value, per = $('#oPeriod').value, p = $('#oProduct').value, pay = $('#oPay').value;
     var f = $('#oFrom').value, t = $('#oTo').value, now = new Date(), today = dayKey(now);
@@ -315,7 +315,7 @@
         (!p || s.items.some(function (i) { return i.sku === p; })) && (!pay || s.pay === pay);
     });
   }
-  // Render the current page of matching sales and update totals and pagination controls.
+  // Render the current page of matching sales and update totals and pagination.
   function renderOrders() {
     var list = ordersList(), pages = Math.max(1, Math.ceil(list.length / OSIZE));
     if (oPage > pages) oPage = pages;
@@ -339,13 +339,13 @@
   }
 
   var charts = {};
-  // Replace a dashboard chart with the supplied configuration when Chart.js is available.
+  // Replace an existing chart instance before drawing the updated data.
   function drawChart(id, cfg) {
     if (!window.Chart) return;
     if (charts[id]) charts[id].destroy();
     charts[id] = new Chart(document.getElementById(id), cfg);
   }
-  // Convert a date to the YYYY-MM-DD format used by date filters and comparisons.
+  // Convert a date to the YYYY-MM-DD format used by filters and comparisons.
   function dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
   // Refresh dashboard statistics, recent activity, restock lists, and charts.
@@ -424,7 +424,7 @@
     fillPoProducts(); fill($('#m-product'), db.products.map(function (p) { return [p.sku, p.name]; })); fillSaleProducts();
   }
 
-  // Refresh every dashboard view after data or filters change.
+  // Redraw every dashboard view after data or filters change.
   function renderAll() { fillSelects(); renderCategoryList(); renderProducts(); renderSuppliers(); renderStaff(); renderMoves(); renderSales(); renderDash(); }
 
   /* ---------- Row actions (Edit / Delete / status changes) ---------- */
@@ -481,8 +481,8 @@
       if (archTab === 'sales') return showReceipt(r.no, r);
       var rows = archTab === 'products' ? [['Stock Keeping Unit', r.id], ['Product', r.name], ['Category', r.category], ['Unit price', money(r.price)], ['Stock when archived', r.stock]]
         : archTab === 'staff' ? [['Full name', r.name], ['Username', r.username], ['Role', 'Staff']]
-          : archTab === 'suppliers' ? [['Supplier', r.name], ['Contact person', r.contact || '-'], ['Phone number', r.phone || '-']]
-            : [['Purchase order number', r.id], ['Supplier', r.supplier], ['Quantity', r.qty], ['Order amount', money(r.amount)], ['Status', r.status]];
+        : archTab === 'suppliers' ? [['Supplier', r.name], ['Contact person', r.contact || '-'], ['Phone number', r.phone || '-']]
+          : [['Purchase order number', r.id], ['Supplier', r.supplier], ['Quantity', r.qty], ['Order amount', money(r.amount)], ['Status', r.status]];
       rows = rows.concat([['Archived by', r.archived_by || '-'], ['Archived on', archWhen(r.archived_at)], ['Reason', r.archive_reason || 'No reason given']]);
       $('#poBody').innerHTML = '<dl class="detail-list">' + rows.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>';
       $('#poModalTitle').textContent = r.name || r.id; bootstrap.Modal.getOrCreateInstance($('#poModal')).show();
@@ -498,10 +498,8 @@
     },
     'staff-del': function (username) {
       var s = (db.staff || []).filter(function (x) { return x.username === username; })[0]; if (!s) return;
-      showArchive({
-        title: 'Archive staff account', message: 'Archive ' + s.name + '? They will no longer be able to sign in. You can restore the account later from Archive Items.',
-        onConfirm: function (reason) { api('staff_archive', { id: username, reason: reason }).then(function (r) { if (r) { refresh(); showToast('success', s.name + ' was archived and can no longer sign in.'); } }); }
-      });
+      showArchive({ title: 'Archive staff account', message: 'Archive ' + s.name + '? They will no longer be able to sign in. You can restore the account later from Archive Items.',
+        onConfirm: function (reason) { api('staff_archive', { id: username, reason: reason }).then(function (r) { if (r) { refresh(); showToast('success', s.name + ' was archived and can no longer sign in.'); } }); } });
     },
     'cart-rm': function (sku) { cart = cart.filter(function (c) { return c.sku !== sku; }); renderCart(); }
   };
@@ -520,7 +518,7 @@
     if (editingSku) return;
     api('next_sku', { category: $('#p-cat').value }).then(function (r) { if (r) $('#p-sku').value = r.sku; });
   }
-  // Populate and open the product form for creating a product or editing an existing one.
+  // Populate and open the product form for creating or editing a product.
   function openProduct(p) {
     editingSku = p ? p.sku : '';
     $$('#productModal .field-error').forEach(function (b) { b.textContent = ''; });
@@ -584,7 +582,7 @@
   $('#supSearch').addEventListener('input', renderSuppliers); $('#poSearch').addEventListener('input', renderSuppliers); $('#poStatus').addEventListener('change', renderSuppliers);
 
   /* ----- Purchase orders: create ----- */
-  // Set the purchase-order delivery date to seven days from today and enforce today's minimum.
+  // Set the delivery date one week ahead and prevent selecting a past date.
   function defaultPoDate() { var d = new Date(); d.setDate(d.getDate() + 7); $('#po-date').value = dayKey(d); $('#po-date').min = dayKey(new Date()); }
   defaultPoDate();
   $('#po-supplier').addEventListener('change', fillPoProducts); $('#po-product').addEventListener('change', showPoAmount); $('#po-qty').addEventListener('input', showPoAmount);
@@ -624,7 +622,7 @@
   /* ----- Stock movements form ----- */
   fill($('#m-type'), isAdmin ? [['in', 'Stock in'], ['out', 'Stock out'], ['adj', 'Adjustment']] : [['in', 'Stock in'], ['out', 'Stock out']]);   // only the administrator sees Adjustment
   $('#m-product').addEventListener('change', showPicked); $('#m-type').addEventListener('change', showPicked);
-  // Clear the movement form and refresh the selected product's stock information.
+  // Clear movement inputs and refresh the selected product's stock information.
   function clearMoveForm() { $('#m-qty').value = ''; $('#m-note').value = ''; showPicked(); }
   $('#m-clear').addEventListener('click', clearMoveForm);
   $('#m-save').addEventListener('click', function () {
@@ -700,7 +698,7 @@
       if (r) { payModal.hide(); cart = []; refresh().then(function () { showToast('success', 'Sale ' + r.receipt + ' completed.'); showReceipt(r.receipt); }); }
     });
   });
-  $('#receiptPrint').addEventListener('click', function () { window.print(); });
+  /* The Print receipt button is shown but has no action for now. */
 
   /* ----- Sales: order history filters, pagination, download ----- */
   // Show manual date fields only when the custom order-history period is selected.
@@ -713,19 +711,11 @@
   });
   $('#oPrev').addEventListener('click', function () { oPage--; renderOrders(); });
   $('#oNext').addEventListener('click', function () { oPage++; renderOrders(); });
-  $('#oExport').addEventListener('click', function () {
-    var list = ordersList(); if (!list.length) return showToast('warning', 'There are no sales to download.');
-    var rows = [['Receipt', 'Date', 'Customer', 'Items sold', 'Payment method', 'Reference number', 'Total', 'Amount received', 'Change', 'Cashier']].concat(list.map(function (s) {
-      return [s.no, fmt(s.date, true), s.customer, s.items.map(function (i) { return i.name + ' x ' + i.qty; }).join('; '), s.pay, s.ref || '', s.total.toFixed(2), (s.received || s.total).toFixed(2), (s.change || 0).toFixed(2), s.cashier || ''];
-    }));
-    var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' })); a.download = 'primebuild-sales-report.csv'; a.click();
-    showToast('success', 'Sales report downloaded.');
-  });
+  /* The Download Sales Report button is shown but has no action for now. */
 
   /* ---------- Archive and Deleted Items (administrator) ---------- */
   var arch = { products: [], suppliers: [], sales: [], pos: [], staff: [] }, archTab = 'products';
-  // Format an archive timestamp for display, returning a dash when it is absent.
+  // Format an archive timestamp for display, using a dash when it is absent.
   function archWhen(s) { return s ? fmt(String(s).replace(' ', 'T'), true) : '-'; }
   var archDef = {
     products: { title: 'Archived products', head: ['Stock Keeping Unit', 'Product', 'Category'], cells: function (r) { return td(esc(r.id), 'sku') + td(esc(r.name)) + td(esc(r.category)); } },
@@ -734,7 +724,7 @@
     staff: { title: 'Archived staff', head: ['Full name', 'Username'], cells: function (r) { return td(esc(r.name)) + td(esc(r.username)); } },
     pos: { title: 'Archived purchase orders', head: ['Purchase order number', 'Supplier', 'Amount'], cells: function (r) { return td(esc(r.id)) + td(esc(r.supplier)) + td(money(r.amount)); } }
   };
-  // Render the selected archive category and its available restore or view actions.
+  // Render the selected archive category with its restore and detail actions.
   function renderArchive() {
     var def = archDef[archTab], q = $('#archSearch').value.trim().toLowerCase();
     Object.keys(archDef).forEach(function (k) {
