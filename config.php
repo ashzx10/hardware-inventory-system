@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+date_default_timezone_set('Asia/Manila');
+
 /* Update these values if your local MySQL account is different. */
 const DB_HOST = '127.0.0.1';
 const DB_NAME = 'primebuild';
