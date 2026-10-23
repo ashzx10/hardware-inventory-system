@@ -70,11 +70,11 @@ CREATE TABLE stock_movements (
 
 -- Sample users for the initial local installation.
 INSERT INTO users (username, email, password_hash, full_name, role) VALUES
-('admin', 'admin@primebuild.local', SHA2('admin123', 256), 'Marco Dela Rosa', 'admin'),
-('staff', 'staff@primebuild.local', SHA2('staff123', 256), 'Angelica Reyes', 'staff'),
-('maria.santos', 'maria.santos@primebuild.local', SHA2('staff123', 256), 'Maria Santos', 'staff'),
-('juan.reyes', 'juan.reyes@primebuild.local', SHA2('staff123', 256), 'Juan Reyes', 'staff'),
-('anna.mendoza', 'anna.mendoza@primebuild.local', SHA2('admin123', 256), 'Anna Mendoza', 'admin');
+('admin@primebuild.com', 'admin@primebuild.local', SHA2('admin123', 256), 'Marco Dela Rosa', 'admin'),
+('angelica.reyes@primebuild.com', 'staff@primebuild.local', SHA2('staff123', 256), 'Angelica Reyes', 'staff'),
+('maria.santos@primebuild.com', 'maria.santos@primebuild.local', SHA2('staff123', 256), 'Maria Santos', 'staff'),
+('juan.reyes@primebuild.com', 'juan.reyes@primebuild.local', SHA2('staff123', 256), 'Juan Reyes', 'staff'),
+('anna.mendoza@primebuild.com', 'anna.mendoza@primebuild.local', SHA2('staff123', 256), 'Anna Mendoza', 'staff');
 
 -- Seed categories, suppliers, and products for the dashboard's initial inventory.
 INSERT INTO categories (name, prefix) VALUES
